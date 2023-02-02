@@ -9,7 +9,6 @@ from data.ts_load_dataset import TerraSentiaFrontalCameraDataset
 
 from matplotlib import pyplot as plt
 
-
 def get_model_instance_segmentation(num_classes):
     #Load an instance segmentation model pre-trained on COCO
     model = maskrcnn_resnet50_fpn(weights="DEFAULT")
@@ -59,11 +58,11 @@ def train():
                                                    get_transform(train_flag=False))
 
     indices = torch.randperm(len(dataset)).tolist()
-    dataset = torch.utils.data.Subset(dataset, indices[:-10])
-    dataset_test = torch.utils.data.Subset(dataset_test, indices[-10:])
+    dataset = torch.utils.data.Subset(dataset, indices)
+    dataset_test = torch.utils.data.Subset(dataset_test, indices)
 
     data_loader = torch.utils.data.DataLoader(dataset, \
-                                              batch_size=1, \
+                                              batch_size=5, \
                                               shuffle=True, \
                                               num_workers=4, \
                                               collate_fn=collate_fn)
@@ -79,12 +78,20 @@ def train():
                                                    step_size=3, \
                                                    gamma=0.1)
 
-    num_epochs = 10
+    num_epochs = 100
 
     for epoch in range(num_epochs):
         train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
         lr_scheduler.step()
         evaluate(model, data_loader, device=device)
+        
+        #Save a checkpoint every 10 epochs
+        if epoch % 10 == 0:
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict()
+            }, "models/model_" + str(epoch))
 
     print("Finished training")
 
