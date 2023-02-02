@@ -78,7 +78,7 @@ def train():
                                                    step_size=3, \
                                                    gamma=0.1)
 
-    num_epochs = 100
+    num_epochs = 5000
 
     for epoch in range(num_epochs):
         train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
@@ -86,13 +86,18 @@ def train():
         evaluate(model, data_loader, device=device)
         
         #Save a checkpoint every 10 epochs
-        if epoch % 10 == 0:
+        if epoch % 100 == 0:
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict()
             }, "models/model_" + str(epoch))
 
+    torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict()
+            }, "models/model_" + str(5000) + 'final')
     print("Finished training")
 
 if __name__ == "__main__":
