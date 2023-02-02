@@ -59,8 +59,8 @@ def train():
                                                    get_transform(train_flag=False))
 
     indices = torch.randperm(len(dataset)).tolist()
-    dataset = torch.utils.data.Subset(dataset, indices[:-50])
-    dataset_test = torch.utils.data.Subset(dataset_test, indices[-50:])
+    dataset = torch.utils.data.Subset(dataset, indices[:-10])
+    dataset_test = torch.utils.data.Subset(dataset_test, indices[-10:])
 
     data_loader = torch.utils.data.DataLoader(dataset, \
                                               batch_size=1, \
@@ -90,24 +90,3 @@ def train():
 
 if __name__ == "__main__":
     train()
-
-# if __name__ == "__main__":
-#     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    
-#     #model = get_model_instance_segmentation(2)
-
-#     model = get_model_instance_segmentation(2)
-
-#     # images, target = next(iter(data_loader))
-#     # images = list(image for image in images)
-#     # targets = [{k: v for k, v in t.items()} for t in target]
-#     # output = model(images, targets)
-
-#     model.eval()
-#     #x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
-#     #img = transforms.PILToTensor()(Image.open("PNGImages/FudanPed00001.png").convert("RGB")).unsqueeze_(0)/255
-
-#     predictions = model(img)
-#     first_mask = predictions[0]['masks'].detach().cpu().numpy()[1]
-#     plt.imshow(first_mask[0])
-#     plt.show()

@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 import numpy as np
 from PIL import Image
@@ -26,8 +27,8 @@ class TerraSentiaFrontalCameraDataset(torch.utils.data.Dataset):
         #print("mask_path: ", mask_path)
 
         #Load the image and the mask. The mask is not converted to RGB.
-        img = Image.open(img_path).convert("RGB")
-        mask = np.asarray(Image.open(mask_path))
+        img = Image.open(img_path).convert("L")
+        mask = np.asarray(Image.open(mask_path).convert('L'))
 
         #Instances are encoded as different colors
         obj_ids = np.unique(mask)
@@ -39,11 +40,9 @@ class TerraSentiaFrontalCameraDataset(torch.utils.data.Dataset):
 
         #MASKS DEFINITION
         #Get the binary mask from the colors
-        #print("mask.shape: ", mask.shape)
         masks = mask == obj_ids[:, None, None]
         #print("masks.shape: ", masks.shape)
         masks = torch.as_tensor(masks, dtype=torch.uint8)
-        #print("masks.shape: ", masks.shape)
 
         #BOUNDING BOXES DEFINITION
         #Get the bounding boxes coordinates for each mask
@@ -62,7 +61,6 @@ class TerraSentiaFrontalCameraDataset(torch.utils.data.Dataset):
         #CLASSES DEFINITION
         #There is only one class
         labels = torch.ones((num_objs,), dtype=torch.int64)
-        
 
         image_id = torch.tensor([idx])
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:,2] - boxes[:, 0])
