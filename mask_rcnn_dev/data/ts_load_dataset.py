@@ -5,6 +5,8 @@ import numpy as np
 from PIL import Image
 from matplotlib import pyplot as plt
 
+from torchvision.transforms import PILToTensor
+
 class TerraSentiaFrontalCameraDataset(torch.utils.data.Dataset):
     def __init__(self, root_folder, images_folder, mask_folder, transforms):
         #Set the needed paths
@@ -27,7 +29,7 @@ class TerraSentiaFrontalCameraDataset(torch.utils.data.Dataset):
         #print("mask_path: ", mask_path)
 
         #Load the image and the mask. The mask is not converted to RGB.
-        img = Image.open(img_path).convert("L")
+        img = Image.open(img_path).convert("RGB")
         mask = np.asarray(Image.open(mask_path).convert('L'))
 
         #Instances are encoded as different colors
@@ -78,6 +80,27 @@ class TerraSentiaFrontalCameraDataset(torch.utils.data.Dataset):
             img, target = self.transforms(img, target)
 
         return img, target
+
+    def get_metrics(self):
+        psum = torch.tensor([0.0, 0.0, 0.0])
+        psum_sq = torch.tensor([0.0, 0.0, 0.0])
+
+        for img in self.imgs:
+            img = PILToTensor()(Image.open(os.path.join(self.images_folder, img)).convert("RGB"))/255
+            psum += img.sum(axis=[1, 2])
+            psum_sq += (img ** 2).sum(axis=[1, 2])
+        
+        count = float(len(self.imgs) * 1280 * 720)
+
+        # mean and std
+        total_mean = psum / count
+        total_var = (psum_sq / count) - (total_mean ** 2)
+        total_std = torch.sqrt(total_var)
+
+        return total_mean, total_std
+
+    def get_file_name(self, idx):
+        return self.imgs[idx]
 
     def __len__(self):
         return len(self.imgs)
