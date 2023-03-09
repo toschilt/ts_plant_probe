@@ -2,6 +2,8 @@ import os
 import json
 from typing import Union, Tuple, List, Dict, Any
 
+import numpy.typing as npt
+from PIL import Image
 import torch
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNN, MaskRCNNPredictor, maskrcnn_resnet50_fpn_v2 
@@ -9,6 +11,7 @@ from torchvision.models.detection.mask_rcnn import MaskRCNN, MaskRCNNPredictor, 
 from segmentation_model.model.detection import transforms as T
 from segmentation_model.model.detection.engine import train_one_epoch, evaluate
 from segmentation_model.model.detection.utils import collate_fn
+from torchvision.transforms import PILToTensor
 
 from segmentation_model.ts_dataset import ts_load_dataset
 
@@ -364,3 +367,33 @@ class MaskRCNNStemSegmentationModel:
                 )
 
         print("Finished training!")
+
+    def inference(
+        self,
+        inference_img_path: str
+    ) -> Tuple[npt.ArrayLike, npt.ArrayLike, npt.ArrayLike]:
+        """
+        Passes a image through the network and outputs the result.
+
+        The result is filtered by project convenience, therefore some
+        network outputs are inaccessible using this method.
+
+        Args:
+            inference_img_path: the path to the image.
+
+        Returns:
+            a tuple of three Numpy arrays: the bounding boxes, 
+            the mask images and the scores for each one of 
+            the detected instances.
+        """    
+        img = Image.open(inference_img_path).convert("RGB")
+        img_tensor = PILToTensor()(img).unsqueeze_(0)/255
+
+        self.model.eval()
+        predictions = self.model(img_tensor)
+
+        boxes = predictions[0]['boxes'].detach().cpu().numpy()
+        masks = predictions[0]['masks'].detach().cpu().numpy()
+        scores = predictions[0]['scores'].detach().cpu().numpy()
+
+        return boxes, masks, scores
