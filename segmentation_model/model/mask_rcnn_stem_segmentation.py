@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Union, List, Dict, Any
+from typing import Union, Tuple, List, Dict, Any
 
 import torch
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
@@ -29,16 +29,21 @@ class MaskRCNNStemSegmentationModel:
 
     #TODO: Remove TerraSentiaDataset object requirement to do inference.
         Create another structure to encapsulate information about the images. 
-
     #TODO: Add more explanation about train_log and validation_log dictionaries.
+    #TODO: Encapsule some of train method routines in private functions.
+    #FIXME: This implementation can't load and resume training.
     
     Attributes:
+        hyperparams: a dictionary containing the hyperparameters values. More
+            description can be found at the constructor method documentation.
         dataset: segmentation_model.ts_dataset.ts_load_dataset.TerraSentiaDataset
             The TerraSentiaDataset object. It contains all images path and
             do all the pre-processing needed. It also contains some information
             about the images, as original size, mean and standard deviation.
         model: torchvision.models.detection.mask_rcnn.MaskRCNN
             The Mask RCNN model customized to the stem segmentation task.
+        optimizer: the SGD optimizer for training the model
+        lr_scheduler: the LR Scheduler for training the model.
         transforms: a list of PyTorch transforms to be applied to images when loaded.
         train_log: a dictionary containing all the training metrics.
         validation_log: a dictionary containing all the validation metrics.
@@ -53,6 +58,7 @@ class MaskRCNNStemSegmentationModel:
         input_max_size: int,
         transforms: Any = None,
         model_path: str = None,
+        **kwargs: float,
     ):
         """
         Initializes the model with the necessary modifications.
@@ -71,9 +77,34 @@ class MaskRCNNStemSegmentationModel:
             model_path: a string containing the path to the trained model. If it is None,
                 transforms attribute is evaluated for training. If it is not None, the
                 transforms attribute is evaluated for inference.
+
+        **kwargs:
+            lr: the SGD optimizer learning rate. Default = 0.005
+            momentum: the SGD optimizer momentum. Default = 0.9 
+            weight_decay: the SGD optimizer weight decay. Default = 0.0005
+            step_size: the amount of epochs to apply learning rate decay. Default = 30
+            gamma: the learning decay rate. Default = 0.1
+            checkpoint_epochs: the number of epochs between safety model saves. Default = 20
+            checkpoint_mAP_threshold: the minimum mAP improvement to save a new model.
+                Default = 0.01
         """
+        self.hyperparams = {
+            'lr': 0.005,
+            'momentum': 0.9,
+            'weight_decay': 0.0005,
+            'step_size': 30,
+            'gamma': 0.1,
+            'checkpoint_epochs': 20,
+            'checkpoint_mAP_threshold': 0.01,
+        }
+        for key in kwargs:
+            self.hyperparams[key] = kwargs[key]
+        
         self.dataset = ts_dataset
-        self.model = self._get_model(input_min_size, input_max_size)
+        self.model, self.optimizer, self.lr_scheduler = self._get_model(
+            input_min_size,
+            input_max_size, 
+            model_path)
 
         if transforms is not None:
             self.dataset.transforms = transforms
@@ -90,19 +121,27 @@ class MaskRCNNStemSegmentationModel:
         self,
         input_min_size: int,
         input_max_size: int,
+        model_path: str = None,
         num_classes: int = 2,
-    ) -> MaskRCNN:
+    ) -> Tuple[MaskRCNN, torch.optim.SGD, torch.optim.lr_scheduler.StepLR]:
         """
-        Returns the model from PyTorch and adapt to stem segmentation task.
+        Constructs the model from PyTorch and adapt to stem segmentation task.
 
+        It also constructs a SGD optimizer and a learning rate scheduler.
+        
         Args:
             input_min_size: The minimum size to resize image before inserting it
                 into the model.
             input_max_size: The maximum size to resize image before inserting it
                 into the model.
+            model_path: a string containing the path to the trained model. If
+                specified, model weights are loaded.
             num_classes: The number of classes that the model will look for.
                 For this task, num_classes should be 2 (stem and background).
                 This value is used as default.
+
+        Returns:
+            the MaskRCNN model, the SGD optimizer and the LR Scheduler, respectively.
         """
         model = maskrcnn_resnet50_fpn_v2(
             weights="DEFAULT", 
@@ -127,7 +166,24 @@ class MaskRCNNStemSegmentationModel:
             hidden_layer,
             num_classes)
         
-        return model
+        params = [p for p in model.parameters() if p.requires_grad]
+        optimizer = torch.optim.SGD(
+            params,
+            lr=self.hyperparams['lr'], 
+            momentum=self.hyperparams['momentum'], 
+            weight_decay=self.hyperparams['weight_decay'])
+        
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer,
+            step_size=self.hyperparams['step_size'],
+            gamma=self.hyperparams['gamma'])
+        
+        if model_path is not None:
+            checkpoint = torch.load(model_path)
+            model.load_state_dict(checkpoint['model_state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        
+        return model, optimizer, lr_scheduler
     
     def _get_transforms(
             self,
@@ -205,7 +261,6 @@ class MaskRCNNStemSegmentationModel:
         num_epochs: int,
         log_path: str = None,
         num_workers: int = 4,
-        **kwargs: float,
     ) -> None:
         """
         Train the model and log data when needed.
@@ -219,17 +274,7 @@ class MaskRCNNStemSegmentationModel:
             num_epochs: number of epochs for the training.
             log_path: the path to the folder where the logs will be written. If None,
                 logging is deactivated.
-            num_works: the number of sub-processes to use for data loading.
-            
-        **kargs:
-            lr: the SGD optimizer learning rate. Default = 0.005
-            momentum: the SGD optimizer momentum. Default = 0.9 
-            weight_decay: the SGD optimizer weight decay. Default = 0.0005
-            step_size: the amount of epochs to apply learning rate decay. Default = 30
-            gamma: the learning decay rate. Default = 0.1
-            checkpoint_epochs: the number of epochs between safety model saves. Default = 20
-            checkpoint_mAP_threshold: the minimum mAP improvement to save a new model.
-                Default = 0.01
+            num_workers: the number of sub-processes to use for data loading.
         """
         # Reinitializes metrics from other trainings
         self.train_log = None
@@ -264,40 +309,16 @@ class MaskRCNNStemSegmentationModel:
             num_workers=num_workers,
             collate_fn=collate_fn)
         
-        self.model.to(device)
-        params = [p for p in self.model.parameters() if p.requires_grad]
-        hyperparams = {
-            'lr': 0.005,
-            'momentum': 0.9,
-            'weight_decay': 0.0005,
-            'step_size': 30,
-            'gamma': 0.1,
-            'checkpoint_epochs': 20,
-            'checkpoint_mAP_threshold': 0.01,
-        }
-        for key in kwargs:
-            hyperparams[key] = kwargs[key]
-
-        optimizer = torch.optim.SGD(
-            params,
-            lr=hyperparams['lr'], 
-            momentum=hyperparams['momentum'], 
-            weight_decay=hyperparams['weight_decay'])
-        
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer,
-            step_size=hyperparams['step_size'],
-            gamma=hyperparams['gamma'])
-        
+        self.model.to(device)      
         for epoch in range(num_epochs):
             train_logger = train_one_epoch(
                 self.model,
-                optimizer,
+                self.optimizer,
                 train_loader, 
                 device,
                 epoch,
                 print_freq=10)
-            lr_scheduler.step()
+            self.lr_scheduler.step()
 
             test_logger = evaluate(
                 self.model,
@@ -316,19 +337,19 @@ class MaskRCNNStemSegmentationModel:
             mAP = test_logger.coco_eval['segm'].stats[0]
 
             # Save a checkpoint if the model improves by "checkpoint_mAP" or each "checkpoint_epochs" epochs.
-            if (mAP - hyperparams['checkpoint_mAP_threshold']) >= last_best_mAP:
+            if (mAP - self.hyperparams['checkpoint_mAP_threshold']) >= last_best_mAP:
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict': self.model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict(),
                     'mAP': mAP
                 }, "models/model_better_mAP_" + str(epoch))
                 last_best_mAP = mAP
-            elif epoch % hyperparams['checkpoint_epochs'] == 0:
+            elif (epoch % self.hyperparams['checkpoint_epochs']) == 0:
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict': self.model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict(),
                     'mAP': mAP
                 }, "models/model_safety_checkpoint_" + str(epoch))
 
