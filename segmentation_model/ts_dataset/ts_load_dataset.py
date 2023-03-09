@@ -29,6 +29,8 @@ class TerraSentiaDataset(torch.utils.data.Dataset):
             a list of all PNG images file paths lexicographically sorted.
         mask_imgs: list[str]
             a list of all labeled mask images file paths lexicographically sorted.
+        num_imbs: int
+            a integer number representing how many images there are in the dataset.
         image_size: tuple(int, int)
             a tuple containing the width and height of the image, respectively.
         mean: torch.FloatTensor
@@ -63,10 +65,9 @@ class TerraSentiaDataset(torch.utils.data.Dataset):
         self.png_path = png_path
         self.mask_path = mask_path
         self.transforms = transforms
-
         self.png_imgs = sorted(os.listdir(self.png_path))
         self.mask_imgs = sorted(os.listdir(self.mask_path))
-
+        self.num_imgs = len(self.png_imgs)
         self.img_size = Image.open(os.path.join(self.png_path, self.png_imgs[0])).size
 
         if mean is None or std_dev is None:
@@ -147,6 +148,10 @@ class TerraSentiaDataset(torch.utils.data.Dataset):
             rgb_img, target = self.transforms(rgb_img, target)
 
         return rgb_img, target
+
+    def __len__(self):
+        """Returns the dataset length."""
+        return self.num_imgs
     
     def _get_metrics(self):
         """
