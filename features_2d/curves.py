@@ -64,3 +64,17 @@ class Line2D(Curve2D):
         super().__init__(x, y)
         self.angular_coef = angular_coef
         self.linear_coef = linear_coef
+
+    def evaluate_line_at_y(self, y: float):
+        """
+        Evaluates the line at a specific y value
+
+        Calculate the expression x = (y - b)/m, where m is the angular
+        coeficient and b is the linear coeficient. 
+
+        Args:
+            y: the y coordinate to evaluate the line
+        """
+        return (y - self.linear_coef)/self.angular_coef
+
+    

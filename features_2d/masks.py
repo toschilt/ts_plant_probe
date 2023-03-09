@@ -19,13 +19,17 @@ class Mask:
             (height, weight, color_channel)
         binary_data - a Numpy array containing the binary mask data
             with shape (height, weight)
-        binary_data_idx - a Numpy array containing all the indices
+        binary_data_idxs - a Numpy array containing all the indices
             where binary_data attribute is not False. It is useful
             to calculate mask curves.
+        binary_threshold - a float number representing the threshold with
+            the mask is binarized.
         average_curve - a features2d.curves.Curve2D object. It describes
             the curve positioned in the middle portion of the mask.
         ransac_line - a features2d.curves.Line2D object. It describes the
             fitted line with average_curve points with RANSAC.
+        x_bottom - the X coordinate evaluated at the mask last row. It is
+            used for redundancy filtering.
     """
 
     def __init__(
@@ -47,8 +51,11 @@ class Mask:
         self.binary_data = np.uint8(self.data > binary_threshold)[:, :, 0]
         self.binary_data_idxs = np.argwhere(self.binary_data)
 
+        self.binary_threshold = binary_threshold
+
         self.average_curve = None
         self.ransac_line = None
+        self.x_bottom = None
 
     def _get_average_curve(
         self,
@@ -197,3 +204,54 @@ class MaskGroup:
         for mask in self.masks:
             mask.extract_curves()
 
+    def filter_redundancy(
+        self,
+        x_coordinate_threshold: float
+    ):
+        """
+        Filter the masks that represents the same crop.
+
+        The filtering follows these steps:
+            1. Finds the appropriate curves to describe the mask. 
+            For more information about how the curves are obtained,
+            please refer to the Mask.extract_curves method documentation.
+            2. Finds the X coordinate where the obtained line intercepts
+            the bottom part of the image.
+            3. Applies a threshold on the distance between consecutive X
+            coordinates. Masks that have this coordinate too close are
+            merged and their curves are calculated again. 
+
+        Args:
+            x_coordinate_threshold: a float containing the threshold to
+                be applied to the distances between lines' X coordinates.
+        """
+
+        for mask in self.masks:
+            # Garantees that the filtering is done only after the curves
+            # are extracted.
+            if mask.ransac_line is None:
+                mask.extract_curves()
+            
+            mask.x_bottom = mask.ransac_line.evaluate_line_at_y(mask.data.shape[0])
+
+        # Sorts the masks using the x_bottom property as the key.
+        self.masks.sort(key= lambda mask: mask.x_bottom)
+
+        # Gets the x_bottom values and calculates the distance between them. Finds the indices
+        # that are smaller than the threshold.
+        xs_bottom = [mask.x_bottom for mask in self.masks]
+        dist_between_x_bottom = np.abs(np.array(xs_bottom[0:-1]) - np.array(xs_bottom[1:]))
+        dist_between_x_bottom_idx = (dist_between_x_bottom < x_coordinate_threshold).nonzero()[0]
+        
+        # Iterate over all redudant bottom_x points
+        for idx in dist_between_x_bottom_idx:
+            combined_mask_data = self.masks[idx].data + self.masks[idx + 1].data
+            binary_threshold = self.masks[idx].binary_threshold
+            
+            self.masks[idx] = Mask(combined_mask_data, binary_threshold)
+            self.masks[idx].extract_curves()
+            self.scores[idx] = np.average(self.scores[idx:idx+2])
+
+            np.remove(self.scores, idx + 1)
+            del self.masks[idx + 1]
+            dist_between_x_bottom_idx -= 1
