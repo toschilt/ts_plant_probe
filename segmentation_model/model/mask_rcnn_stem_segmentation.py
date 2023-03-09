@@ -378,6 +378,9 @@ class MaskRCNNStemSegmentationModel:
         The result is filtered by project convenience, therefore some
         network outputs are inaccessible using this method.
 
+        #TODO: incorporate the same transformation object from
+            the dataset.
+
         Args:
             inference_img_path: the path to the image.
 
