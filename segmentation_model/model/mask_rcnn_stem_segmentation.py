@@ -385,9 +385,10 @@ class MaskRCNNStemSegmentationModel:
             inference_img_path: the path to the image.
 
         Returns:
+            the RGB image (PIL image class) and
             a tuple of three Numpy arrays: the bounding boxes, 
             the mask images and the scores for each one of 
-            the detected instances.
+            the detected instances, respectively.
         """    
         img = Image.open(inference_img_path).convert("RGB")
         img_tensor = PILToTensor()(img).unsqueeze_(0)/255
@@ -399,4 +400,4 @@ class MaskRCNNStemSegmentationModel:
         masks = predictions[0]['masks'].detach().cpu().numpy()
         scores = predictions[0]['scores'].detach().cpu().numpy()
 
-        return boxes, masks, scores
+        return img, boxes, masks, scores
