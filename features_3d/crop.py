@@ -163,3 +163,25 @@ class CornCrop:
         pca.fit(X)
 
         return pca.components_[0]
+
+    def find_emerging_point(
+        self,
+        ground_plane: GroundPlane
+    ):
+        """
+        Finds the crop's emerging point.
+
+        The emerging point is obtained by calculating the interception
+        point between the crop and the ground plane.
+
+        Args:
+            ground_plane: the features_3d.ground_plane.GroundPlane object.
+                It contains all the ground plane features.
+        """
+        scalar = np.dot(
+            ground_plane.average_point - self.average_point,
+            ground_plane.normal_vector)
+        scalar /= np.dot(ground_plane.normal_vector, self.crop_vector)
+        self.emerging_point = self.average_point + scalar*self.crop_vector
+
+        return self.emerging_point
