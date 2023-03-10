@@ -18,7 +18,11 @@ class GroundPlane:
     Attributes:
         rgb_img: a PIL Image object containing the scene RGB image.
         hsv_img: a Numpy array object containing the scene HSV image.
-        binary_mask: a Numpy array containing the binary mask 
+        binary_mask: a Numpy array containing the binary mask.
+        ground_vectors: a Numpy array containing two vectors that describes
+            the ground plane.
+        normal_vector: a Numpy array containing the normal vector of the
+            ground plane.
     """
 
     def __init__(
@@ -98,6 +102,10 @@ class GroundPlane:
         # Find the point and vectors that describe the ground plane.
         self.average_point = np.average(self.ps_3d, axis=0)
         self.ground_vectors = self._get_principal_components(self.ps_3d)
+        self.normal_vector = np.cross(
+            self.ground_vectors[0],
+            self.ground_vectors[1]
+        )
 
     def get_threshold_gaussian_mask(
         self,
