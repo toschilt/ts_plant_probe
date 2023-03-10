@@ -371,7 +371,7 @@ class MaskRCNNStemSegmentationModel:
     def inference(
         self,
         inference_img_path: str
-    ) -> Tuple[npt.ArrayLike, npt.ArrayLike, npt.ArrayLike]:
+    ) -> Tuple[Image.Image, npt.ArrayLike, npt.ArrayLike, npt.ArrayLike]:
         """
         Passes a image through the network and outputs the result.
 

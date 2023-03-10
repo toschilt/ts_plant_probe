@@ -73,4 +73,3 @@ class StereoCamera:
             a Numpy array containing the data from hte image.
         """
         return np.array(Image.open(image_path))
-

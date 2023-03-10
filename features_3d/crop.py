@@ -9,6 +9,7 @@ from sklearn.decomposition import PCA
 
 from features_2d.masks import Mask
 from features_3d.camera import StereoCamera
+from features_3d.ground_plane import GroundPlane
 
 class CornCrop:
     """
@@ -20,6 +21,8 @@ class CornCrop:
             that describes the crop position.
         crop_vector: a Numpy array containing the 3D vector that
             describes the crop orientation. 
+        emerging_point: a Numpy array containing the 3D point where
+            the crop intercepts the ground plane.
     """
 
     def __init__(
@@ -76,6 +79,8 @@ class CornCrop:
 
         self.average_point = np.average(self.ps_3d, axis=0)
         self.crop_vector = self._get_principal_component(self.ps_3d)
+
+        self.emerging_point = None
 
     def _filter_crop_depth(
         self,
@@ -158,3 +163,21 @@ class CornCrop:
         pca.fit(X)
 
         return pca.components_[0]
+
+    def find_emerging_point(
+        self,
+        ground_plane: GroundPlane
+    ):
+        """
+        Finds the crop's emerging point.
+
+        The emerging point is obtained by calculating the interception
+        point between the crop and the ground plane.
+
+        Args:
+            ground_plane: the features_3d.ground_plane.GroundPlane object.
+                It contains all the ground plane features.
+        """
+        scalar = np.dot((point_plane - line_point), normal_vector_plane)/np.dot(normal_vector_plane, line_vector)
+        self.emerging_point = 
+
