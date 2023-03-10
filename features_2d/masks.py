@@ -1,6 +1,7 @@
 """
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from sklearn import linear_model
@@ -107,7 +108,12 @@ class Mask:
         angular_coef = ransac.estimator_.coef_[0][0]
         linear_coef = ransac.estimator_.intercept_[0]
 
-        return Line2D(angular_coef, linear_coef)
+        scalars = np.linspace(
+            np.min(average_curve.y),
+            np.max(average_curve.y)
+        )
+
+        return Line2D(angular_coef, linear_coef, y=scalars)
 
     def extract_curves(self):
         """
@@ -123,6 +129,18 @@ class Mask:
         """
         self.average_curve = self._get_average_curve(self.binary_data_idxs)
         self.ransac_line = self._get_RANSAC_line(self.average_curve)
+
+    def plot(
+        self,
+        alpha: float = 1.0
+    ):
+        """
+        Plot a single mask using the Matplolib library.
+
+        Args:
+            alpha: a float containing the mask transparency amount.
+        """
+        plt.imshow(np.ma.masked_where(self.binary_data == 0, self.binary_data), alpha=alpha)
 
 class MaskGroup:
     """
@@ -189,6 +207,7 @@ class MaskGroup:
             self.scores = np.delete(self.scores, idxs)
             for idx in idxs:
                 del self.masks[idx]
+                idxs -= 1
         elif type == 'percentage':
             num_predictions = int(len(self.masks)*percentage)
             del self.masks[num_predictions:]
@@ -255,3 +274,16 @@ class MaskGroup:
             np.remove(self.scores, idx + 1)
             del self.masks[idx + 1]
             dist_between_x_bottom_idx -= 1
+
+    def plot(
+        self,
+        alpha: float = 1.0
+    ):
+        """
+        Plot the group of masks using Matplolib library.
+
+        Args:
+            alpha: a float containing the mask transparency amount.
+        """
+        for mask in self.masks:
+            mask.plot(alpha)
