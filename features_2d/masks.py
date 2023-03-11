@@ -81,9 +81,10 @@ class Mask:
         unique_y, unique_y_idx = np.unique(sorted_xy[:, 0], return_index=True)
         x_values = np.split(binary_data_indxs[:, 1], unique_y_idx[1:])
 
-        for i, x in zip(range(0, len(x_values)), x_values):
-            x_values[i] = np.average(x)
-        average_x = np.array(x_values)
+        average_x = []
+        for x in x_values:
+            average_x.append(np.average(x))
+        average_x = np.array(average_x)
 
         return Curve2D(average_x, unique_y)
     
@@ -262,16 +263,20 @@ class MaskGroup:
         dist_between_x_bottom = np.abs(np.array(xs_bottom[0:-1]) - np.array(xs_bottom[1:]))
         dist_between_x_bottom_idx = (dist_between_x_bottom < x_coordinate_threshold).nonzero()[0]
         
-        # Iterate over all redudant bottom_x points
+        # Iterate over all redundant bottom_x points
         for idx in dist_between_x_bottom_idx:
             combined_mask_data = self.masks[idx].data + self.masks[idx + 1].data
             binary_threshold = self.masks[idx].binary_threshold
             
+            # Converts the combined mask to the output inference shape.
+            # Allows to use the default Mask constructor. 
+            combined_mask_data = np.moveaxis(combined_mask_data, 2, 0)
+
             self.masks[idx] = Mask(combined_mask_data, binary_threshold)
             self.masks[idx].extract_curves()
             self.scores[idx] = np.average(self.scores[idx:idx+2])
 
-            np.remove(self.scores, idx + 1)
+            np.delete(self.scores, idx + 1)
             del self.masks[idx + 1]
             dist_between_x_bottom_idx -= 1
 
