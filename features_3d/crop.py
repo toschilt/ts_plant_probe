@@ -227,7 +227,7 @@ class CornCrop:
 
         if line_scalars is not None:
             line_scalars = np.tile(line_scalars, (3, 1)).T
-            line = self.emerging_point + line_scalars*self.crop_vector
+            line = self.average_point + line_scalars*self.crop_vector
 
             data.append(
                 go.Scatter3d(
@@ -246,7 +246,7 @@ class CornCrop:
                     x=[self.emerging_point[0]],
                     y=[self.emerging_point[1]],
                     z=[self.emerging_point[2]],
-                    marker = go.scatter3d.Marker(size=2),
+                    marker = go.scatter3d.Marker(size=4),
                     opacity=0.8,
                     mode='markers'
                 )
