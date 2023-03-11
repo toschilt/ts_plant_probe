@@ -1,11 +1,12 @@
 """
 """
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 import numpy.typing as npt
 from PIL import Image
 from sklearn.decomposition import PCA
+import plotly.graph_objects as go
 
 from features_2d.masks import Mask
 from features_3d.camera import StereoCamera
@@ -185,3 +186,70 @@ class CornCrop:
         self.emerging_point = self.average_point + scalar*self.crop_vector
 
         return self.emerging_point
+    
+    def plot(
+        self,
+        data_plot: List = None,
+        plot_3d_points: bool = False,
+        line_scalars: npt.ArrayLike = None,
+        plot_emerging_point: bool = False
+    ):
+        """
+        Plot the corn crop using Plotly library.
+
+        Args:
+            data_plot: a list containing all the previous plotted
+                objects. If it is not informed, a empty list is
+                created and data is appended to it.
+            plot_3d_points: a boolean that indicates if the crop 3D
+                pointcloud needs to be plotted.
+            line_scalars: a Numpy array containing the desired scalars
+                to plot the crop line. If it is not informed, the line
+                is not plotted.
+            plot_emerging_point: a boolean that indicates if the crop
+                3D emerging point needs to be plotted.
+        """
+        data = []
+        if data_plot is not None:
+            data = data_plot
+
+        if plot_3d_points:
+            data.append(
+                    go.Scatter3d(
+                    x=self.ps_3d[:, 0],
+                    y=self.ps_3d[:, 1],
+                    z=self.ps_3d[:, 2],
+                    marker = go.scatter3d.Marker(size=2),
+                    opacity=0.8,
+                    mode='markers'
+                )
+            )
+
+        if line_scalars is not None:
+            line_scalars = np.tile(line_scalars, (3, 1)).T
+            line = self.emerging_point + line_scalars*self.crop_vector
+
+            data.append(
+                go.Scatter3d(
+                    x=line[:, 0],
+                    y=line[:, 1],
+                    z=line[:, 2],
+                    marker = go.scatter3d.Marker(size=2),
+                    opacity=0.8,
+                    mode='markers'
+                )
+            )
+        
+        if plot_emerging_point:
+            data.append(
+                go.Scatter3d(
+                    x=[self.emerging_point[0]],
+                    y=[self.emerging_point[1]],
+                    z=[self.emerging_point[2]],
+                    marker = go.scatter3d.Marker(size=2),
+                    opacity=0.8,
+                    mode='markers'
+                )
+            )
+        
+        return data
