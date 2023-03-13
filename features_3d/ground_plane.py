@@ -63,7 +63,6 @@ class GroundPlane:
                 please refer to source.
         """
         self.rgb_img = rgb_img
-        self.binary_mask = None
 
         # Finding the ground mask.
         if finding_ground_method == 'threshold_gaussian':
