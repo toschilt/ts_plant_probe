@@ -77,46 +77,47 @@ class AgriculturalScene:
             rotation: a tuple containing three floats describing the 
                 desired yaw, pitch and roll rotations.
         """
-        # Get the extrinsics matrix.
-        R_yaw = np.array(
-            [[np.cos(rotation[0]), -np.sin(rotation[0]), 0],
-            [np.sin(rotation[0]), np.cos(rotation[0]), 0],
-            [0, 0, 1]])
-        R_pitch = np.array(
-            [[np.cos(rotation[1]), 0, np.sin(rotation[1])],
-            [0, 1, 0],
-            [-np.sin(rotation[1]), 0, np.cos(rotation[1])]])
-        R_roll = np.array(
-            [[1, 0, 0],
-            [0, np.cos(rotation[2]), -np.sin(rotation[2])],
-            [0, np.sin(rotation[2]), np.cos(rotation[2])]])
-        R = R_yaw @ R_pitch @ R_roll
-        t = np.array([translation[0], translation[1], translation[2]])[:, None]
-        self.extrinsics_matrix = np.vstack((np.hstack((R, t)), [0, 0, 0, 1]))
+        if self.extrinsics is None:
+            # Get the extrinsics matrix.
+            R_yaw = np.array(
+                [[np.cos(rotation[0]), -np.sin(rotation[0]), 0],
+                [np.sin(rotation[0]), np.cos(rotation[0]), 0],
+                [0, 0, 1]])
+            R_pitch = np.array(
+                [[np.cos(rotation[1]), 0, np.sin(rotation[1])],
+                [0, 1, 0],
+                [-np.sin(rotation[1]), 0, np.cos(rotation[1])]])
+            R_roll = np.array(
+                [[1, 0, 0],
+                [0, np.cos(rotation[2]), -np.sin(rotation[2])],
+                [0, np.sin(rotation[2]), np.cos(rotation[2])]])
+            R = R_yaw @ R_pitch @ R_roll
+            t = np.array([translation[0], translation[1], translation[2]])[:, None]
+            self.extrinsics = np.vstack((np.hstack((R, t)), [0, 0, 0, 1]))
 
         # Modfying the crops
         for crop in self.crop_group.crops:
             for p_3d in crop.ps_3d:
-                p_3d = self._apply_extrinsics_to_3D_vector(p_3d, self.extrinsics_matrix)
+                p_3d = self._apply_extrinsics_to_3D_vector(p_3d, self.extrinsics)
 
-            crop.average_point = self._apply_extrinsics_to_3D_vector(crop.average_point, self.extrinsics_matrix)
-            crop.crop_vector = self._apply_extrinsics_to_3D_vector(crop.crop_vector, self.extrinsics_matrix)
-            crop.emerging_point = self._apply_extrinsics_to_3D_vector(crop.emerging_point, self.extrinsics_matrix)
+            crop.average_point = self._apply_extrinsics_to_3D_vector(crop.average_point, self.extrinsics)
+            crop.crop_vector = self._apply_extrinsics_to_3D_vector(crop.crop_vector, self.extrinsics)
+            crop.emerging_point = self._apply_extrinsics_to_3D_vector(crop.emerging_point, self.extrinsics)
 
         # Modfying the ground plane
         for p_3d in self.ground_plane.ps_3d:
-            p_3d = self._apply_extrinsics_to_3D_vector(p_3d, self.extrinsics_matrix)
+            p_3d = self._apply_extrinsics_to_3D_vector(p_3d, self.extrinsics)
 
         for vector in self.ground_plane.ground_vectors:
-            vector = self._apply_extrinsics_to_3D_vector(vector, self.extrinsics_matrix)
+            vector = self._apply_extrinsics_to_3D_vector(vector, self.extrinsics)
 
         self.ground_plane.normal_vector = self._apply_extrinsics_to_3D_vector(
             self.ground_plane.normal_vector,
-            self.extrinsics_matrix)
+            self.extrinsics)
         
         self.ground_plane.average_point = self._apply_extrinsics_to_3D_vector(
             self.ground_plane.average_point,
-            self.extrinsics_matrix
+            self.extrinsics
         )
         
         self.ground_plane.coeficients = self.ground_plane._get_plane_coefficients(
