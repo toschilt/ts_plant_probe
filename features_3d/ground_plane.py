@@ -10,6 +10,8 @@ from PIL import Image
 import plotly.graph_objects as go
 from sklearn.decomposition import PCA
 
+import matplotlib.pyplot as plt
+
 from ts_semantic_feature_detector.features_3d.camera import StereoCamera
 
 class GroundPlane:
@@ -112,11 +114,32 @@ class GroundPlane:
             self.ground_vectors[1]
         )
 
-        self.coeficients = [
-            self.normal_vector[0],
-            self.normal_vector[1],
-            self.normal_vector[2],
-            -np.sum(self.normal_vector*self.average_point)]
+        self.coeficients = self._get_plane_coefficients(
+            self.normal_vector,
+            self.average_point
+        )
+
+    def _get_plane_coefficients(
+        self,
+        normal_vector: npt.ArrayLike,
+        point: npt.ArrayLike
+    ) -> List:
+        """
+        Calculate the plane coefficients from the normal vector and a point.
+
+        The plane equation considered is ax + by + cz + d = 0.
+
+        Args:
+            normal_vector: a Numpy array containing the ground plane normal vector
+            point: a Numpy array containing a point of the ground plane.
+
+        Returns:
+            a list containing the plane coefficients a, b, c, d in this order.
+        """
+        return [normal_vector[0],
+                normal_vector[1],
+                normal_vector[2],
+                -np.sum(normal_vector*point)]
 
     def get_ngrdi_mask(
         self,
