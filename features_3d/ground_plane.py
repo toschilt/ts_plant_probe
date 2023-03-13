@@ -1,12 +1,13 @@
 """
 """
 from functools import partial
-from typing import Dict
+from typing import Dict, List, Tuple
 
 import cv2
 import numpy as np
 import numpy.typing as npt
 from PIL import Image
+import plotly.graph_objects as go
 from sklearn.decomposition import PCA
 
 from features_3d.camera import StereoCamera
@@ -23,6 +24,8 @@ class GroundPlane:
             the ground plane.
         normal_vector: a Numpy array containing the normal vector of the
             ground plane.
+        coeficients: a Numpy array containing the plane equation coeficients.
+            The equation used is ax + by + cz + d = 0.
     """
 
     def __init__(
@@ -106,6 +109,12 @@ class GroundPlane:
             self.ground_vectors[0],
             self.ground_vectors[1]
         )
+
+        self.coeficients = [
+            self.normal_vector[0],
+            self.normal_vector[1],
+            self.normal_vector[2],
+            -np.sum(self.normal_vector*self.average_point)]
 
     def get_threshold_gaussian_mask(
         self,
@@ -211,3 +220,77 @@ class GroundPlane:
         pca.fit(X)
 
         return pca.components_[:2]
+    
+    def evaluate_at_determined_x_z(
+        self,
+        x: npt.ArrayLike,
+        z: npt.ArrayLike
+    ) -> Tuple[npt.ArrayLike, npt.ArrayLike, npt.ArrayLike]:
+        """
+        Evaluate plane Y coordinates at desired X and Z coordinates.
+
+        Args:
+            x: a Numpy array containing the desired X coordinates.
+            z: a Numpy array containing the desired Z coordinates.
+
+        Returns:
+            three Numpy arrays containing the X, Y and Z coordinates.
+        """
+        x, z = np.meshgrid(x, z)
+        y = -(+ self.coeficients[0]*x
+              + self.coeficients[2]*z 
+              + self.coeficients[3])/self.coeficients[1]
+        return x, y, z
+
+    def plot(
+        self,
+        data_plot: List = None,
+        plot_3d_points: bool = False,
+        plot_plan_scalars: Tuple[npt.ArrayLike, npt.ArrayLike] = None
+    ):
+        """
+        Plot the corn crop using Plotly library.
+
+        Args:
+            data_plot: a list containing all the previous plotted
+                objects. If it is not informed, a empty list is
+                created and data is appended to it.
+            plot_3d_points: a boolean that indicates if the crop 3D
+                pointcloud needs to be plotted.
+            plot_plan_scalars: a tuple containing two Numpy arrays
+                with scalars to plot the plan. The first Numpy array
+                must contain scalars for X coordinates and the second
+                must contain scalars for Z coordinates. If it is not
+                provided, the plan is not plotted.
+        """
+        data = []
+        if data_plot is not None:
+            data = data_plot
+
+        if plot_3d_points:
+            data.append(
+                go.Scatter3d(
+                    x=self.ps_3d[:, 0],
+                    y=self.ps_3d[:, 1],
+                    z=self.ps_3d[:, 2],
+                    marker = go.scatter3d.Marker(size=2),
+                    opacity=0.8,
+                    mode='markers'
+                )
+            )
+
+        if plot_plan_scalars is not None:
+            x, y, z = self.evaluate_at_determined_x_z(
+                plot_plan_scalars[0],
+                plot_plan_scalars[1]
+            )
+
+            data.append(
+                go.Surface(
+                x=x,
+                y=y,
+                z=z
+                )
+            )
+
+        return data

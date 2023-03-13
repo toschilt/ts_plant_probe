@@ -215,7 +215,7 @@ class CornCrop:
 
         if plot_3d_points:
             data.append(
-                    go.Scatter3d(
+                go.Scatter3d(
                     x=self.ps_3d[:, 0],
                     y=self.ps_3d[:, 1],
                     z=self.ps_3d[:, 2],
