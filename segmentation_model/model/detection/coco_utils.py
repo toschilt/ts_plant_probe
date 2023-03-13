@@ -4,7 +4,7 @@ import os
 import torch
 import torch.utils.data
 import torchvision
-from segmentation_model.model.detection import transforms as T
+from ts_semantic_feature_detector.segmentation_model.model.detection import transforms as T
 from pycocotools import mask as coco_mask
 from pycocotools.coco import COCO
 

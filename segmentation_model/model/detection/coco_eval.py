@@ -5,7 +5,7 @@ from contextlib import redirect_stdout
 import numpy as np
 import pycocotools.mask as mask_util
 import torch
-from segmentation_model.model.detection import utils
+from ts_semantic_feature_detector.segmentation_model.model.detection import utils
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 

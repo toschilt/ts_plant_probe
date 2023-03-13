@@ -7,13 +7,12 @@ from PIL import Image
 import torch
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNN, MaskRCNNPredictor, maskrcnn_resnet50_fpn_v2 
-
-from segmentation_model.model.detection import transforms as T
-from segmentation_model.model.detection.engine import train_one_epoch, evaluate
-from segmentation_model.model.detection.utils import collate_fn
 from torchvision.transforms import PILToTensor
 
-from segmentation_model.ts_dataset import ts_load_dataset
+from ts_semantic_feature_detector.segmentation_model.model.detection import transforms as T
+from ts_semantic_feature_detector.segmentation_model.model.detection.engine import train_one_epoch, evaluate
+from ts_semantic_feature_detector.segmentation_model.model.detection.utils import collate_fn
+from ts_semantic_feature_detector.segmentation_model.ts_dataset import ts_load_dataset
 
 class MaskRCNNStemSegmentationModel:
     """

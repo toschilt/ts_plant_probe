@@ -1,8 +1,8 @@
 """
 """
 
-from features_3d.crop import CornCropGroup
-from features_3d.ground_plane import GroundPlane
+from ts_semantic_feature_detector.features_3d.crop import CornCropGroup
+from ts_semantic_feature_detector.features_3d.ground_plane import GroundPlane
 
 class AgriculturalScene:
     """

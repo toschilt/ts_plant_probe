@@ -8,10 +8,10 @@ from PIL import Image
 from sklearn.decomposition import PCA
 import plotly.graph_objects as go
 
-from features_2d.masks import Mask
-from features_2d.masks import MaskGroup
-from features_3d.camera import StereoCamera
-from features_3d.ground_plane import GroundPlane
+from ts_semantic_feature_detector.features_2d.masks import Mask
+from ts_semantic_feature_detector.features_2d.masks import MaskGroup
+from ts_semantic_feature_detector.features_3d.camera import StereoCamera
+from ts_semantic_feature_detector.features_3d.ground_plane import GroundPlane
 
 class CornCrop:
     """

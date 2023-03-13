@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 import numpy.typing as npt
 from PIL import Image
 
-from features_2d.masks import Mask
-from features_2d.masks import MaskGroup
+from ts_semantic_feature_detector.features_2d.masks import MaskGroup
 
 class Visualizer2D:
     """

@@ -4,9 +4,9 @@ import time
 
 import torch
 import torchvision.models.detection.mask_rcnn
-from segmentation_model.model.detection import utils
-from segmentation_model.model.detection.coco_eval import CocoEvaluator
-from segmentation_model.model.detection.coco_utils import get_coco_api_from_dataset
+from ts_semantic_feature_detector.segmentation_model.model.detection import utils
+from ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval import CocoEvaluator
+from ts_semantic_feature_detector.segmentation_model.model.detection.coco_utils import get_coco_api_from_dataset
 
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, scaler=None):

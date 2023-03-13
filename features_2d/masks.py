@@ -6,8 +6,8 @@ import numpy as np
 import numpy.typing as npt
 from sklearn import linear_model
 
-from features_2d.curves import Curve2D
-from features_2d.curves import Line2D
+from ts_semantic_feature_detector.features_2d.curves import Curve2D
+from ts_semantic_feature_detector.features_2d.curves import Line2D
 
 class Mask:
     """

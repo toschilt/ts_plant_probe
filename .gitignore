@@ -1,5 +1,5 @@
 *.png
 __pycache__/
-models/
+checkpoints/
 *.json
 *.txt

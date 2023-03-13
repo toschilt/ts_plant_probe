@@ -10,7 +10,7 @@ from PIL import Image
 import plotly.graph_objects as go
 from sklearn.decomposition import PCA
 
-from features_3d.camera import StereoCamera
+from ts_semantic_feature_detector.features_3d.camera import StereoCamera
 
 class GroundPlane:
     """
