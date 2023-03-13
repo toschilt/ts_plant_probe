@@ -283,12 +283,12 @@ class CornCropGroup:
             depth_img: the PIL Image object containing the depth img
                 from the whole scene. It will be masked in this method.
             filter_threshold: a float value containing the threshold to
-                    filter the depth data. For more reference, please see
-                    documentation for features_3d.masks.CornCrop._filter_crop_depth method. 
-                    If it is not provided, the depth is not filtered.
-            ground_plane: ground_plane: the features_3d.ground_plane.GroundPlane object.
-                    It contains all the ground plane features. If it is not
-                    informed, the crops' emerging point is not calculated.
+                filter the depth data. For more reference, please see
+                documentation for features_3d.masks.CornCrop._filter_crop_depth method. 
+                If it is not provided, the depth is not filtered.
+            ground_plane: the features_3d.ground_plane.GroundPlane object.
+                It contains all the ground plane features. If it is not
+                informed, the crops' emerging point is not calculated.
         """
         
         self.crops = []
