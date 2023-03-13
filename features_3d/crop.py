@@ -9,6 +9,7 @@ from sklearn.decomposition import PCA
 import plotly.graph_objects as go
 
 from features_2d.masks import Mask
+from features_2d.masks import MaskGroup
 from features_3d.camera import StereoCamera
 from features_3d.ground_plane import GroundPlane
 
@@ -252,4 +253,90 @@ class CornCrop:
                 )
             )
         
+        return data
+    
+class CornCropGroup:
+    """
+    Abstraction of a group of 3D agricultural corn crops.
+
+    Attributes:
+        crops: a list containing the features_3d.crop.CornCrop objects.
+    """
+
+    def __init__(
+        self,
+        mask_group: MaskGroup,
+        camera: StereoCamera,
+        depth_img: Image.Image,
+        mask_filter_threshold: float = None,
+        ground_plane: GroundPlane = None
+    ):
+        """
+        Initializes a corn crop group.
+        
+        Args:
+            mask_group: a features_2d.masks.MaskGroup object containing all
+                the crops masks.
+            camera: the features_3d.camera.StereoCamera object. It
+                    contains all the stereo camera information to obtain
+                    the 3D crops.
+            depth_img: the PIL Image object containing the depth img
+                from the whole scene. It will be masked in this method.
+            filter_threshold: a float value containing the threshold to
+                    filter the depth data. For more reference, please see
+                    documentation for features_3d.masks.CornCrop._filter_crop_depth method. 
+                    If it is not provided, the depth is not filtered.
+            ground_plane: ground_plane: the features_3d.ground_plane.GroundPlane object.
+                    It contains all the ground plane features. If it is not
+                    informed, the crops' emerging point is not calculated.
+        """
+        
+        self.crops = []
+        for mask in mask_group.masks:
+            crop = CornCrop(
+                    camera,
+                    depth_img,
+                    mask,
+                    mask_filter_threshold
+                )
+            
+            if ground_plane is not None:
+                crop.find_emerging_point(ground_plane)
+
+            self.crops.append(crop)
+
+    def plot(
+        self,
+        data_plot: List = None,
+        plot_3d_points: bool = False,
+        line_scalars: npt.ArrayLike = None,
+        plot_emerging_point: bool = False
+    ):
+        """
+        Plot the corn group using the Plotly library.
+
+        Args:
+            data_plot: a list containing all the previous plotted
+                objects. If it is not informed, a empty list is
+                created and data is appended to it.
+            plot_3d_points: a boolean that indicates if the crop 3D
+                pointcloud needs to be plotted.
+            line_scalars: a Numpy array containing the desired scalars
+                to plot the crop line. If it is not informed, the line
+                is not plotted.
+            plot_emerging_point: a boolean that indicates if the crop
+                3D emerging point needs to be plotted.
+        """
+        data = []
+        if data_plot is not None:
+            data = data_plot
+
+        for crop in self.crops:
+            crop.plot(
+                data,
+                plot_3d_points,
+                line_scalars,
+                plot_emerging_point
+            )
+
         return data
