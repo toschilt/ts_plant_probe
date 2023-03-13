@@ -63,6 +63,7 @@ class GroundPlane:
                 please refer to source.
         """
         self.rgb_img = rgb_img
+        self.binary_mask = None
 
         # Finding the ground mask.
         if finding_ground_method == 'threshold_gaussian':
@@ -82,16 +83,12 @@ class GroundPlane:
             self.binary_mask = self.get_threshold_gaussian_mask(
                 self.hsv_img, 
                 self.threshold_values)
-            self.binary_mask = np.uint8(self.binary_mask != 0)
         elif finding_ground_method == 'ngrdi':
-            rgb = np.array(rgb_img)
-            red_channel = rgb[:, :, 0]
-            green_channel = rgb[:, :, 1]
-
-            ngrdi = (green_channel - red_channel)/(green_channel + red_channel)
-
-            self.binary_mask = np.uint8(ngrdi != 0)
-
+            self.binary_mask = self.get_ngrdi_mask(
+                np.array(self.rgb_img)
+            )
+            
+        self.binary_mask = np.uint8(self.binary_mask != 0)
         self.binary_mask_idxs = np.argwhere(self.binary_mask)
 
         # Getting ground plane 3D points.
@@ -121,6 +118,23 @@ class GroundPlane:
             self.normal_vector[1],
             self.normal_vector[2],
             -np.sum(self.normal_vector*self.average_point)]
+
+    def get_ngrdi_mask(
+        self,
+        rgb_img: npt.ArrayLike    
+    ):
+        """
+        Applies the 'ngrdi' method to find the ground mask.
+
+        Args:
+            rgb_img: a Numpy array containing the scene image in
+                the RGB color space.
+        """
+
+        red_channel = rgb_img[:, :, 0]
+        green_channel = rgb_img[:, :, 1]
+
+        return (green_channel - red_channel)/(green_channel + red_channel)
 
     def get_threshold_gaussian_mask(
         self,
