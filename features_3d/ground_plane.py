@@ -84,7 +84,13 @@ class GroundPlane:
                 self.threshold_values)
             self.binary_mask = np.uint8(self.binary_mask != 0)
         elif finding_ground_method == 'ngrdi':
-            self.binary_mask = None
+            rgb = np.array(rgb_img)
+            red_channel = rgb[:, :, 0]
+            green_channel = rgb[:, :, 1]
+
+            ngrdi = (green_channel - red_channel)/(green_channel + red_channel)
+
+            self.binary_mask = np.uint8(ngrdi != 0)
 
         self.binary_mask_idxs = np.argwhere(self.binary_mask)
 
