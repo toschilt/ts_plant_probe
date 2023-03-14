@@ -369,7 +369,8 @@ class MaskRCNNStemSegmentationModel:
 
     def inference(
         self,
-        inference_img_path: str
+        inference_img: npt.ArrayLike = None,
+        inference_img_path: str = None
     ) -> Tuple[Image.Image, npt.ArrayLike, npt.ArrayLike, npt.ArrayLike]:
         """
         Passes a image through the network and outputs the result.
@@ -381,15 +382,23 @@ class MaskRCNNStemSegmentationModel:
             the dataset.
 
         Args:
-            inference_img_path: the path to the image.
+            inference_img: a Numpy array containing the image. If it is not
+                provided, the path to the image must be informed.
+            inference_img_path: the path to the image. If it is not provided,
+                the path to the image must be informed.
 
         Returns:
             the RGB image (PIL image class) and
             a tuple of three Numpy arrays: the bounding boxes, 
             the mask images and the scores for each one of 
             the detected instances, respectively.
-        """    
-        img = Image.open(inference_img_path).convert("RGB")
+        """ 
+        img = None   
+        if inference_img is not None:
+            img = Image.fromarray(inference_img).convert("RGB")        
+        elif inference_img_path is not None:
+            img = Image.open(inference_img_path).convert("RGB")
+
         img_tensor = PILToTensor()(img).unsqueeze_(0)/255
 
         self.model.eval()
