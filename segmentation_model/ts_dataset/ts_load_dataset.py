@@ -76,6 +76,9 @@ class TerraSentiaDataset(torch.utils.data.Dataset):
             self.mean = mean
             self.std_dev = std_dev
 
+        print(self.mean)
+        print(self.std_dev)
+
     def __getitem__(self, idx: int):
         """
         Get data about a single dataset frame by index.
