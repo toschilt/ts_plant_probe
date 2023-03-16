@@ -192,6 +192,8 @@ class MaskGroup:
 
         It discards the masks and scores considered worst.
 
+        #TODO: Throw an excpetion when self.masks or self.scores is empty.
+
         Args:
             type: a string containing the type of metric that will be used to 
                 filter the group. It can be 'score' or 'percentage'. The first
@@ -203,16 +205,17 @@ class MaskGroup:
             percentage: a float value at interval [0, 1]. It determines the
                 percentage of best masks that are desired.
         """
-        if type == 'score':
-            idxs = np.where(self.scores < score_threshold)[0]
-            self.scores = np.delete(self.scores, idxs)
-            for idx in idxs:
-                del self.masks[idx]
-                idxs -= 1
-        elif type == 'percentage':
-            num_predictions = int(len(self.masks)*percentage)
-            del self.masks[num_predictions:]
-            np.delete(self.scores, range(num_predictions, len(self.scores)))
+        if self.masks and self.scores:
+            if type == 'score':
+                idxs = np.where(self.scores < score_threshold)[0]
+                self.scores = np.delete(self.scores, idxs)
+                for idx in idxs:
+                    del self.masks[idx]
+                    idxs -= 1
+            elif type == 'percentage':
+                num_predictions = int(len(self.masks)*percentage)
+                del self.masks[num_predictions:]
+                np.delete(self.scores, range(num_predictions, len(self.scores)))
 
     def extract_curves(self):
         """
@@ -241,44 +244,47 @@ class MaskGroup:
             coordinates. Masks that have this coordinate too close are
             merged and their curves are calculated again. 
 
+        #TODO: Throw an exception when self.masks and self.scores are None.
+
         Args:
             x_coordinate_threshold: a float containing the threshold to
                 be applied to the distances between lines' X coordinates.
         """
 
-        for mask in self.masks:
-            # Garantees that the filtering is done only after the curves
-            # are extracted.
-            if mask.ransac_line is None:
-                mask.extract_curves()
+        if self.masks and self.scores:
+            for mask in self.masks:
+                # Garantees that the filtering is done only after the curves
+                # are extracted.
+                if mask.ransac_line is None:
+                    mask.extract_curves()
+                
+                mask.x_bottom = mask.ransac_line.evaluate_line_at_y(mask.data.shape[0])
+
+            # Sorts the masks using the x_bottom property as the key.
+            self.masks.sort(key= lambda mask: mask.x_bottom)
+
+            # Gets the x_bottom values and calculates the distance between them. Finds the indices
+            # that are smaller than the threshold.
+            xs_bottom = [mask.x_bottom for mask in self.masks]
+            dist_between_x_bottom = np.abs(np.array(xs_bottom[0:-1]) - np.array(xs_bottom[1:]))
+            dist_between_x_bottom_idx = (dist_between_x_bottom < x_coordinate_threshold).nonzero()[0]
             
-            mask.x_bottom = mask.ransac_line.evaluate_line_at_y(mask.data.shape[0])
+            # Iterate over all redundant bottom_x points
+            for idx in dist_between_x_bottom_idx:
+                combined_mask_data = self.masks[idx].data + self.masks[idx + 1].data
+                binary_threshold = self.masks[idx].binary_threshold
+                
+                # Converts the combined mask to the output inference shape.
+                # Allows to use the default Mask constructor. 
+                combined_mask_data = np.moveaxis(combined_mask_data, 2, 0)
 
-        # Sorts the masks using the x_bottom property as the key.
-        self.masks.sort(key= lambda mask: mask.x_bottom)
+                self.masks[idx] = Mask(combined_mask_data, binary_threshold)
+                self.masks[idx].extract_curves()
+                self.scores[idx] = np.average(self.scores[idx:idx+2])
 
-        # Gets the x_bottom values and calculates the distance between them. Finds the indices
-        # that are smaller than the threshold.
-        xs_bottom = [mask.x_bottom for mask in self.masks]
-        dist_between_x_bottom = np.abs(np.array(xs_bottom[0:-1]) - np.array(xs_bottom[1:]))
-        dist_between_x_bottom_idx = (dist_between_x_bottom < x_coordinate_threshold).nonzero()[0]
-        
-        # Iterate over all redundant bottom_x points
-        for idx in dist_between_x_bottom_idx:
-            combined_mask_data = self.masks[idx].data + self.masks[idx + 1].data
-            binary_threshold = self.masks[idx].binary_threshold
-            
-            # Converts the combined mask to the output inference shape.
-            # Allows to use the default Mask constructor. 
-            combined_mask_data = np.moveaxis(combined_mask_data, 2, 0)
-
-            self.masks[idx] = Mask(combined_mask_data, binary_threshold)
-            self.masks[idx].extract_curves()
-            self.scores[idx] = np.average(self.scores[idx:idx+2])
-
-            np.delete(self.scores, idx + 1)
-            del self.masks[idx + 1]
-            dist_between_x_bottom_idx -= 1
+                np.delete(self.scores, idx + 1)
+                del self.masks[idx + 1]
+                dist_between_x_bottom_idx -= 1
 
     def plot(
         self,
