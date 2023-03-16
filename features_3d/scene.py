@@ -1,6 +1,6 @@
 """
 """
-import typing as List
+from typing import List, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -124,4 +124,54 @@ class AgriculturalScene:
             self.ground_plane.normal_vector,
             self.ground_plane.average_point
         )
+
+    def plot(
+        self,
+        data_plot: List = None,
+        line_scalars: npt.ArrayLike = None,
+        plane_scalars: Tuple[npt.ArrayLike, npt.ArrayLike] = None,
+        plot_3d_points_crop: bool = False,
+        plot_3d_points_plane: bool = False,
+        plot_emerging_points: bool = False
+    ):
+        """
+        Plot the agricultural scene using the Plotly library.
+
+        Args:
+            data_plot: a list containing all the previous plotted
+                objects. If it is not informed, a empty list is
+                created and data is appended to it.
+            line_scalars: a Numpy array containing the desired scalars
+                to plot the crop line. If it is not informed, the line
+                is not plotted.
+            plane_scalars: a tuple containing two Numpy arrays
+                with scalars to plot the plan. The first Numpy array
+                must contain scalars for X coordinates and the second
+                must contain scalars for Z coordinates. If it is not
+                provided, the plan is not plotted.
+            plot_3d_points_crop: a boolean that indicates if the crop 3D
+                pointclouds needs to be plotted.
+            plot_3d_points_plane: a boolean that indicates if the ground
+                plane 3D pointclouds needs to be plotted.
+            plot_emerging_point: a boolean that indicates if the crop
+                3D emerging point needs to be plotted.
+        """
+
+        data = []
+        if data_plot is not None:
+            data = data_plot
+
+        self.crop_group.plot(
+            data,
+            plot_3d_points_crop,
+            line_scalars,
+            plot_emerging_points
+        )
         
+        self.ground_plane.plot(
+            data,
+            plot_3d_points_plane,
+            plane_scalars
+        )
+
+        return data
