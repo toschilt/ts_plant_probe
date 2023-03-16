@@ -51,6 +51,11 @@ class MaskRCNNStemSegmentationModel:
         validation_log: a dictionary containing all the validation metrics.
         last_best_mAP: the last best Average Precision calculated during training.
             It measures how well the model performed at validation set.
+        start_epoch: the epoch that the model stopped training.
+        train_log: a dictionary containing training metrics data.
+        validation_log: a dictionary containing validation metrics data.
+        train_dataset_idxs: a list containing the training dataset images.
+        validation_dataset_idxs: a list containing the validation dataset images.
     """
 
     def __init__(
@@ -60,6 +65,7 @@ class MaskRCNNStemSegmentationModel:
         input_max_size: int,
         transforms: Any = None,
         model_path: str = None,
+        train: bool = False,
         **kwargs: float,
     ):
         """
@@ -79,6 +85,7 @@ class MaskRCNNStemSegmentationModel:
             model_path: a string containing the path to the trained model. If it is None,
                 transforms attribute is evaluated for training. If it is not None, the
                 transforms attribute is evaluated for inference.
+            train: a boolean value indicating if the user wants to train the network.
 
         **kwargs:
             lr: the SGD optimizer learning rate. Default = 0.005
@@ -110,14 +117,10 @@ class MaskRCNNStemSegmentationModel:
 
         if transforms is not None:
             self.dataset.transforms = transforms
-        elif model_path is None:
+        elif train:
             self.dataset.transforms = self._get_transforms(training=True)
         else:
             self.dataset.transforms = self._get_transforms(training=False)
-
-        self.train_log = None
-        self.validation_log = None
-        self.last_best_mAP = 0
 
     def _get_model(
         self,
@@ -168,6 +171,11 @@ class MaskRCNNStemSegmentationModel:
             hidden_layer,
             num_classes)
         
+        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        print("Using device: ", self.device)
+
+        model.to(self.device)
+        
         params = [p for p in model.parameters() if p.requires_grad]
         optimizer = torch.optim.SGD(
             params,
@@ -180,10 +188,24 @@ class MaskRCNNStemSegmentationModel:
             step_size=self.hyperparams['step_size'],
             gamma=self.hyperparams['gamma'])
         
+        self.last_best_mAP = 0
+        self.start_epoch = 0
+        self.train_log = {}
+        self.validation_log = {}
+        self.train_dataset_idxs = None
+        self.validation_dataset_idxs = None
+
         if model_path is not None:
             checkpoint = torch.load(model_path)
+            # To continue training, we need to start from the next epoch (+1)
+            self.start_epoch = checkpoint['epoch'] + 1
             model.load_state_dict(checkpoint['model_state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.last_best_mAP = checkpoint['mAP']
+            self.train_log = checkpoint['train_log']
+            self.validation_log = checkpoint['validation_log']
+            self.train_dataset_idxs = checkpoint['train_dataset_idxs']
+            self.validation_dataset_idxs = checkpoint['validation_dataset_idxs']
         
         return model, optimizer, lr_scheduler
     
@@ -233,7 +255,10 @@ class MaskRCNNStemSegmentationModel:
                     fp.write(d)
                     fp.write('\n')
 
-    def _divide_dataset(self, train_percentage: float):
+    def _divide_dataset(
+        self, 
+        train_percentage: float
+    ):
         """
         Divide the dataset into training and validation subsets.
 
@@ -278,46 +303,39 @@ class MaskRCNNStemSegmentationModel:
                 logging is deactivated.
             num_workers: the number of sub-processes to use for data loading.
         """
-        # Reinitializes metrics from other trainings
-        self.train_log = {}
-        self.validation_log = {}
-        self.last_best_mAP = 0
-
-        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        print("Using device: ", device)
-
-        training_dataset, validation_dataset = self._divide_dataset(train_percentage)
+        if self.train_dataset_idxs is None and self.validation_dataset_idxs is None:
+            self.train_dataset_idxs, self.validation_dataset_idxs = self._divide_dataset(train_percentage)
+        
         if log_path is not None:
             self._log_to_file(
                 os.path.join(log_path, 'train_imgs.log'),
-                [self.dataset.png_imgs[idx] for idx in training_dataset.indices],
+                [self.dataset.png_imgs[idx] for idx in self.train_dataset_idxs.indices],
             )
             self._log_to_file(
                 os.path.join(log_path, 'validation_imgs.log'),
-                [self.dataset.png_imgs[idx] for idx in validation_dataset.indices],
+                [self.dataset.png_imgs[idx] for idx in self.validation_dataset_idxs.indices],
             )
 
         train_loader = torch.utils.data.DataLoader(
-            training_dataset,
+            self.train_dataset_idxs,
             batch_size=training_batch_size,
             shuffle=True,
             num_workers=num_workers,
             collate_fn=collate_fn)
         
         validation_loader = torch.utils.data.DataLoader(
-            validation_dataset,
+            self.validation_dataset_idxs,
             batch_size=validation_batch_size,
             shuffle=True,
             num_workers=num_workers,
             collate_fn=collate_fn)
         
-        self.model.to(device)      
-        for epoch in range(num_epochs):
+        for epoch in range(self.start_epoch, num_epochs):
             train_logger = train_one_epoch(
                 self.model,
                 self.optimizer,
                 train_loader, 
-                device,
+                self.device,
                 epoch,
                 print_freq=10)
             self.lr_scheduler.step()
@@ -325,7 +343,7 @@ class MaskRCNNStemSegmentationModel:
             test_logger = evaluate(
                 self.model,
                 validation_loader,
-                device)
+                self.device)
 
             # Getting training metrics
             self.train_log[epoch] = dict(train_logger.meters)
@@ -337,23 +355,24 @@ class MaskRCNNStemSegmentationModel:
             self.validation_log[epoch]['bbox'] = list(test_logger.coco_eval['bbox'].stats)
             self.validation_log[epoch]['segm'] = list(test_logger.coco_eval['segm'].stats)
             mAP = test_logger.coco_eval['segm'].stats[0]
+            
+            save_data = {
+                'epoch': epoch,
+                'model_state_dict': self.model.state_dict(),
+                'optimizer_state_dict': self.optimizer.state_dict(),
+                'mAP': mAP,
+                'train_log': self.train_log,
+                'validation_log': self.validation_log,
+                'train_dataset_idxs': self.train_dataset_idxs,
+                'validation_dataset_idxs': self.validation_dataset_idxs
+            }
 
             # Save a checkpoint if the model improves by "checkpoint_mAP" or each "checkpoint_epochs" epochs.
             if (mAP - self.hyperparams['checkpoint_mAP_threshold']) >= self.last_best_mAP:
-                torch.save({
-                    'epoch': epoch,
-                    'model_state_dict': self.model.state_dict(),
-                    'optimizer_state_dict': self.optimizer.state_dict(),
-                    'mAP': mAP
-                }, "models/model_better_mAP_" + str(epoch))
+                torch.save(save_data, "models/model_better_mAP_" + str(epoch))
                 self.last_best_mAP = mAP
             elif (epoch % self.hyperparams['checkpoint_epochs']) == 0:
-                torch.save({
-                    'epoch': epoch,
-                    'model_state_dict': self.model.state_dict(),
-                    'optimizer_state_dict': self.optimizer.state_dict(),
-                    'mAP': mAP
-                }, "models/model_safety_checkpoint_" + str(epoch))
+                torch.save(save_data, "models/model_safety_checkpoint_" + str(epoch))
 
             if log_path is not None:
                 self._log_to_file(
