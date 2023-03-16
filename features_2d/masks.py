@@ -205,7 +205,7 @@ class MaskGroup:
             percentage: a float value at interval [0, 1]. It determines the
                 percentage of best masks that are desired.
         """
-        if self.masks and self.scores:
+        if self.masks and self.scores.any():
             if type == 'score':
                 idxs = np.where(self.scores < score_threshold)[0]
                 self.scores = np.delete(self.scores, idxs)
@@ -251,7 +251,7 @@ class MaskGroup:
                 be applied to the distances between lines' X coordinates.
         """
 
-        if self.masks and self.scores:
+        if self.masks and self.scores.any():
             for mask in self.masks:
                 # Garantees that the filtering is done only after the curves
                 # are extracted.
