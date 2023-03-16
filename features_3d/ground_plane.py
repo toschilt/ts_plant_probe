@@ -285,7 +285,7 @@ class GroundPlane:
         return x, y, z
 
     def plot(
-        self,
+        self,   
         data_plot: List = None,
         plot_3d_points: bool = False,
         plot_plan_scalars: Tuple[npt.ArrayLike, npt.ArrayLike] = None
@@ -297,8 +297,8 @@ class GroundPlane:
             data_plot: a list containing all the previous plotted
                 objects. If it is not informed, a empty list is
                 created and data is appended to it.
-            plot_3d_points: a boolean that indicates if the crop 3D
-                pointcloud needs to be plotted.
+            plot_3d_points: a boolean that indicates if the ground plane
+                3D pointcloud needs to be plotted.
             plot_plan_scalars: a tuple containing two Numpy arrays
                 with scalars to plot the plan. The first Numpy array
                 must contain scalars for X coordinates and the second
