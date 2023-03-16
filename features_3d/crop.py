@@ -6,6 +6,7 @@ import numpy as np
 import numpy.typing as npt
 from PIL import Image
 from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
 from ts_semantic_feature_detector.features_2d.masks import Mask
@@ -18,6 +19,8 @@ class CornCrop:
     Abstraction of a 3D agricultural corn crop.
 
     Attributes:
+        crop_mask: a features_2d.masks.Mask object containing the 2D
+            mask that represents this crop. Used for visualization.
         ps_3d: a Numpy array containing 3D corn crop points.
         average_point: a Numpy array containing the 3D average point
             that describes the crop position.
@@ -25,6 +28,8 @@ class CornCrop:
             describes the crop orientation. 
         emerging_point: a Numpy array containing the 3D point where
             the crop intercepts the ground plane.
+        filter_data: a list containing the histogram and bins values
+            obtained from the depth filtering.
     """
 
     def __init__(
@@ -55,6 +60,7 @@ class CornCrop:
                 documentation for '_filter_crop_depth' method. If it is
                 not provided, the depth is not filtered.
         """
+        self.crop_mask = crop_mask
 
         # Binary mask indices has data in (height, width) shape
         # Need to swap axis to get analogue x and y indices values
@@ -73,6 +79,7 @@ class CornCrop:
             crop_depth, hist, bins = self._filter_crop_depth(
                 crop_depth,
                 filter_threshold)
+            self.filter_data = [hist, bins]
         
         self.ps_3d = []
         for p_2d, z in zip(ps_2d, crop_depth):
@@ -165,6 +172,37 @@ class CornCrop:
         pca.fit(X)
 
         return pca.components_[0]
+    
+    def plot_depth_histogram(
+        self,
+        rgb_img: npt.ArrayLike,
+        depth_img: npt.ArrayLike
+    ):
+        """
+        Plot the crop depth histogram used for filtering.
+
+        Args:
+            rgb_img: a Numpy array containing the RGB image. Used
+                only for visualization.
+            depth_img: a Numpy array containing the depth image. Used
+                only for visualization.
+        """
+        hist = self.filter_data[0]
+        bins = self.filter_data[1]
+
+        plt.figure()
+        plt.subplot(1, 3, 1)
+        plt.title('Mask analysed')
+        plt.imshow(rgb_img)
+        self.crop_mask.plot(alpha = 0.7)
+        plt.subplot(1, 3, 2)
+        plt.title('Depth image')
+        plt.imshow(depth_img)
+        plt.subplot(1, 3, 3)
+        plt.bar(bins[:-1], hist, width=np.diff(bins), edgecolor="black", align="edge")
+        plt.xlabel('Depth (mm)')
+        plt.ylabel('Occurrences')
+        plt.show()
 
     def find_emerging_point(
         self,
@@ -304,6 +342,23 @@ class CornCropGroup:
                 crop.find_emerging_point(ground_plane)
 
             self.crops.append(crop)
+
+    def plot_depth_histograms(
+        self,
+        rgb_img: npt.ArrayLike,
+        depth_img: npt.ArrayLike
+    ):
+        """
+        Plot the crop depth histograms used for filtering.
+
+        Args:
+            rgb_img: a Numpy array containing the RGB image. Used
+                only for visualization.
+            depth_img: a Numpy array containing the depth image. Used
+                only for visualization.
+        """
+        for crop in self.crops:
+            crop.plot_depth_histogram(rgb_img, depth_img)
 
     def plot(
         self,
