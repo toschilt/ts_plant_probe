@@ -94,7 +94,7 @@ class MaskRCNNStemSegmentationModel:
             'lr': 0.005,
             'momentum': 0.9,
             'weight_decay': 0.0005,
-            'step_size': 30,
+            'step_size': 100,
             'gamma': 0.1,
             'checkpoint_epochs': 20,
             'checkpoint_mAP_threshold': 0.01,
@@ -279,8 +279,8 @@ class MaskRCNNStemSegmentationModel:
             num_workers: the number of sub-processes to use for data loading.
         """
         # Reinitializes metrics from other trainings
-        self.train_log = None
-        self.validation_log = None
+        self.train_log = {}
+        self.validation_log = {}
         self.last_best_mAP = 0
 
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -333,20 +333,20 @@ class MaskRCNNStemSegmentationModel:
                 self.train_log[epoch][meter] = self.train_log[epoch][meter].value
             
             # Getting evaluation metrics
-            self.test_log[epoch] = {}
-            self.test_log[epoch]['bbox'] = list(test_logger.coco_eval['bbox'].stats)
-            self.test_log[epoch]['segm'] = list(test_logger.coco_eval['segm'].stats)
+            self.validation_log[epoch] = {}
+            self.validation_log[epoch]['bbox'] = list(test_logger.coco_eval['bbox'].stats)
+            self.validation_log[epoch]['segm'] = list(test_logger.coco_eval['segm'].stats)
             mAP = test_logger.coco_eval['segm'].stats[0]
 
             # Save a checkpoint if the model improves by "checkpoint_mAP" or each "checkpoint_epochs" epochs.
-            if (mAP - self.hyperparams['checkpoint_mAP_threshold']) >= last_best_mAP:
+            if (mAP - self.hyperparams['checkpoint_mAP_threshold']) >= self.last_best_mAP:
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict': self.model.state_dict(),
                     'optimizer_state_dict': self.optimizer.state_dict(),
                     'mAP': mAP
                 }, "models/model_better_mAP_" + str(epoch))
-                last_best_mAP = mAP
+                self.last_best_mAP = mAP
             elif (epoch % self.hyperparams['checkpoint_epochs']) == 0:
                 torch.save({
                     'epoch': epoch,
@@ -395,7 +395,7 @@ class MaskRCNNStemSegmentationModel:
         """ 
         img = None   
         if inference_img is not None:
-            img = Image.fromarray(inference_img).convert("RGB")        
+            img = Image.fromarray(inference_img).convert("RGB")
         elif inference_img_path is not None:
             img = Image.open(inference_img_path).convert("RGB")
 
