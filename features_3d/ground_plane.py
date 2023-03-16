@@ -223,6 +223,7 @@ class GroundPlane:
         class constructor.
         """
         cv2.namedWindow('control', cv2.WINDOW_AUTOSIZE)
+        cv2.namedWindow('original', cv2.WINDOW_AUTOSIZE)
         cv2.namedWindow('image', cv2.WINDOW_AUTOSIZE)
 
         for key in self.threshold_values.keys():
@@ -233,6 +234,8 @@ class GroundPlane:
                 255,
                 partial(self._parameter_trackbars_callback, key)
             )
+        
+        cv2.imshow('original', self.rgb_img)
 
         while True:
             self.binary_mask = self.get_threshold_gaussian_mask(
