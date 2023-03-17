@@ -50,7 +50,13 @@ class AgricultureRosbagLoader:
         """
 
         self.bag = rosbag.Bag(bag_path)
+
         self.topics = topics
+
+        topics_list = []
+        for key in topics.keys():
+            topics_list.append(topics[key])
+
         self.lowest_freq_topic = lowest_freq_topic
 
         self.start_time = self.bag.get_start_time()
@@ -59,7 +65,7 @@ class AgricultureRosbagLoader:
         self.start_time = rospy.Time.from_sec(self.start_time)
 
         self.raw_data = self.bag.read_messages(
-            topics=self.topics,
+            topics=topics_list,
             start_time=self.start_time
         )
         
@@ -126,6 +132,11 @@ class AgricultureRosbagLoader:
         """
 
         ekf_position = ekf_msg.pose.pose.position
+        ekf_position = [
+            ekf_position.x,
+            ekf_position.y,
+            ekf_position.z
+        ]
 
         imu_quaternion = imu_msg.orientation
         imu_quaternion = [
