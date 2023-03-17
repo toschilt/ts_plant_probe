@@ -173,7 +173,6 @@ class MaskRCNNStemSegmentationModel:
         
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         print("Using device: ", self.device)
-
         model.to(self.device)
         
         params = [p for p in model.parameters() if p.requires_grad]
@@ -418,11 +417,16 @@ class MaskRCNNStemSegmentationModel:
         elif inference_img_path is not None:
             img = Image.open(inference_img_path).convert("RGB")
 
-        img_tensor = PILToTensor()(img).unsqueeze_(0)/255
+        img_tensor = None
+        if torch.cuda.is_available():
+            img_tensor = PILToTensor()(img).unsqueeze_(0).cuda()/255
+        else:
+            img_tensor = PILToTensor()(img).unsqueeze_(0)/255
 
         self.model.eval()
+        img_tensor.to(self.device)
+        
         predictions = self.model(img_tensor)
-
         boxes = predictions[0]['boxes'].detach().cpu().numpy()
         masks = predictions[0]['masks'].detach().cpu().numpy()
         scores = predictions[0]['scores'].detach().cpu().numpy()
