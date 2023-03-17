@@ -2,11 +2,14 @@
 """
 
 from operator import itemgetter
-from typing import Dict
+from typing import Dict, List, Tuple
 import yaml
 
 import rosbag
 import rospy
+from sensor_msgs.msg import Imu
+from nav_msgs.msg import Odometry
+from tf.transformations import euler_from_quaternion
 
 class AgricultureRosbagLoader:
     """
@@ -98,3 +101,55 @@ class AgricultureRosbagLoader:
                         msgs[key].clear()
 
                     yield filtered_topics
+
+    def get_extrinsics(
+        self,
+        ekf_msg: Odometry,
+        imu_msg: Imu
+    ) -> Tuple[List, List]:
+        """
+        Get the extrinsics information from IMU and EKF messages.
+
+        As advised by some DASLAB members, this method extracts roll
+        and pitch from the IMU and yaw (heading) from EKF.
+
+        Args:
+            ekf_msg: a nav_msgs.msg.Odometry object containing
+                the EKF data.
+            imu_msg: a sensor_msgs.msg.Imu object containing the
+                IMU data.
+
+        Returns:
+            a list containing the robot's estimated position by EFK and
+        another list containing the robot's estimated orientation by EKF
+        and IMU.
+        """
+
+        ekf_position = ekf_msg.pose.pose.position
+
+        imu_quaternion = imu_msg.orientation
+        imu_quaternion = [
+            imu_quaternion.x,
+            imu_quaternion.y,
+            imu_quaternion.z,
+            imu_quaternion.w
+        ]
+        imu_euler = euler_from_quaternion(imu_quaternion)
+
+        ekf_quaternion = ekf_msg.pose.pose.orientation
+        ekf_quaternion = [
+            ekf_quaternion.x,
+            ekf_quaternion.y,
+            ekf_quaternion.z,
+            ekf_quaternion.w
+        ]
+        ekf_euler = euler_from_quaternion(ekf_quaternion)
+
+        orientation = [
+            imu_euler[0],
+            imu_euler[1],
+            ekf_euler[2]
+        ]
+
+        return ekf_position, orientation
+        
