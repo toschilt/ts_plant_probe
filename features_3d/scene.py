@@ -84,8 +84,8 @@ class AgriculturalScene:
         if self.extrinsics is None:
             # Get the extrinsics matrix.
             R_yaw = np.array(
-                [[np.cos(rotation[0]), -np.sin(rotation[0]), 0],
-                [np.sin(rotation[0]), np.cos(rotation[0]), 0],
+                [[np.cos(rotation[2]), -np.sin(rotation[2]), 0],
+                [np.sin(rotation[2]), np.cos(rotation[2]), 0],
                 [0, 0, 1]])
             R_pitch = np.array(
                 [[np.cos(rotation[1]), 0, np.sin(rotation[1])],
@@ -93,15 +93,18 @@ class AgriculturalScene:
                 [-np.sin(rotation[1]), 0, np.cos(rotation[1])]])
             R_roll = np.array(
                 [[1, 0, 0],
-                [0, np.cos(rotation[2]), -np.sin(rotation[2])],
-                [0, np.sin(rotation[2]), np.cos(rotation[2])]])
+                [0, np.cos(rotation[0]), -np.sin(rotation[0])],
+                [0, np.sin(rotation[0]), np.cos(rotation[0])]])
             R = R_yaw @ R_pitch @ R_roll
             t = np.array([translation[0], translation[1], translation[2]])[:, None]
             self.extrinsics = np.vstack((np.hstack((R, t)), [0, 0, 0, 1]))
 
         # Modfying the ground plane
-        for p_3d in self.ground_plane.ps_3d:
-            p_3d = self._apply_extrinsics_to_3D_vector(p_3d, self.extrinsics)
+        for i in range(len(self.ground_plane.ps_3d)):
+            self.ground_plane.ps_3d[i] = self._apply_extrinsics_to_3D_vector(
+                self.ground_plane.ps_3d[i], 
+                self.extrinsics
+            )
 
         self.ground_plane.average_point = np.average(
             self.ground_plane.ps_3d,
@@ -121,8 +124,11 @@ class AgriculturalScene:
 
         # Modfying the crops
         for crop in self.crop_group.crops:
-            for p_3d in crop.ps_3d:
-                p_3d = self._apply_extrinsics_to_3D_vector(p_3d, self.extrinsics)
+            for i in range(len(crop.ps_3d)):
+                crop.ps_3d[i] = self._apply_extrinsics_to_3D_vector(
+                    crop.ps_3d[i],
+                    self.extrinsics
+                )
 
             crop.average_point = np.average(crop.ps_3d, axis=0)
             crop.crop_vector = crop._get_principal_component(crop.ps_3d)
