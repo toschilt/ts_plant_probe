@@ -73,7 +73,10 @@ class CornCrop:
         # Acess depth_img only in the 2D crop points
         crop_depth = depth_img[
             crop_mask.binary_data_idxs[:, 0],
-            crop_mask.binary_data_idxs[:, 1]]
+            crop_mask.binary_data_idxs[:, 1]
+        ]
+        crop_depth = np.array(crop_depth).astype(float)
+        crop_depth /= float(1e3)
         
         if filter_threshold is not None:
             crop_depth, hist, bins = self._filter_crop_depth(

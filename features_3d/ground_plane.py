@@ -100,6 +100,8 @@ class GroundPlane:
             self.binary_mask_idxs[:, 0],
             self.binary_mask_idxs[:, 1]
         ]
+        ground_depth = np.array(ground_depth).astype(float)
+        ground_depth /= float(1e3)
 
         self.ps_3d = []
         for p_2d, z in zip(ps_2d, ground_depth):
