@@ -177,6 +177,8 @@ class DataExtractor():
 
         Args:
             path: a string containing the path to the desired folder.
+
+        #FIXME: permission problem when creating folders.
         """
         pass
         # if not os.path.exists(path):
