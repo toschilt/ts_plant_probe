@@ -97,8 +97,8 @@ class CornCrop:
     def _filter_crop_depth(
         self,
         masked_depth: Image.Image,
-        hist_derivative_threshold: float = 70,
-        size_bins: int = 100
+        hist_derivative_threshold: float = 2,
+        size_bins: int = 500
     ) -> Tuple[Image.Image, npt.ArrayLike, npt.ArrayLike]:
         """
         Filters the depth image with a distance occurence approach.
@@ -117,6 +117,9 @@ class CornCrop:
             size_bins: a interger value containing the size of the histogram
                 bins.
 
+        #TODO: adds an option to use different approaches to filter.
+        #TODO: update the documentation of the new (and simpler) method.
+
         Returns:
             the PIL Image object containing the filtered depth information.
             a Numpy array containing the histogram values (size i).
@@ -134,31 +137,48 @@ class CornCrop:
         # Find the distance that has the most occurrences
         most_prob_z_bin_idx = np.argmax(hist)
 
-        # Compute histogram derivative and find the points where it is above
-        # the specified threshold
-        hist_derivative = np.abs(hist[1:] - hist[:-1])
-        filtered_hist_derivative = hist_derivative > hist_derivative_threshold
-        
-        # Find the extremities of the occurence distribution
-        rising_idx = np.where(~filtered_hist_derivative & np.roll(filtered_hist_derivative,-1))[0]
-        rising_idx = rising_idx[rising_idx <= most_prob_z_bin_idx]
-        falling_idx = np.where(~np.roll(filtered_hist_derivative,-1) & filtered_hist_derivative)[0]
-        falling_idx = falling_idx[falling_idx >= most_prob_z_bin_idx]
-        
-        if rising_idx.any():
-            lower_idx_value = rising_idx[-1]
-        else:
-            lower_idx_value = 0
+        lowest_bin_idx = most_prob_z_bin_idx - hist_derivative_threshold
+        highest_bin_idx = most_prob_z_bin_idx + hist_derivative_threshold
 
-        if falling_idx.any():
-            higher_idx_value = falling_idx[0]
-        else:
-            higher_idx_value = len(bins) - 3
+        if lowest_bin_idx < 0:
+            lowest_bin_idx = 0
 
-        # Use the depth at the extremities to clip the depth values
-        lower_z = bins[lower_idx_value + 2]
-        high_z = bins[higher_idx_value + 2]
+        if highest_bin_idx > bins.shape[0]:
+            highest_bin_idx = bins.shape[0] - 1
+
+        lower_z = bins[lowest_bin_idx]
+        high_z = bins[highest_bin_idx]
+
         return np.clip(masked_depth, lower_z, high_z), hist, bins
+
+        # most_prob_z_bin = hist[most_prob_z_bin_idx]
+
+        # # Compute histogram derivative and find the points where it is above
+        # # the specified threshold
+        # hist_derivative = np.abs(hist[1:] - hist[:-1])
+
+        # filtered_hist_derivative = hist_derivative > hist_derivative_threshold*most_prob_z_bin
+        
+        # # Find the extremities of the occurence distribution
+        # rising_idx = np.where(~filtered_hist_derivative & np.roll(filtered_hist_derivative,-1))[0]
+        # rising_idx = rising_idx[rising_idx <= most_prob_z_bin_idx]
+        # falling_idx = np.where(~np.roll(filtered_hist_derivative,-1) & filtered_hist_derivative)[0]
+        # falling_idx = falling_idx[falling_idx >= most_prob_z_bin_idx]
+
+        # if rising_idx.any():
+        #     lower_idx_value = rising_idx[-1]
+        # else:
+        #     lower_idx_value = 0
+
+        # if falling_idx.any():
+        #     higher_idx_value = falling_idx[0]
+        # else:
+        #     higher_idx_value = len(bins) - 3
+
+        # # Use the depth at the extremities to clip the depth values
+        # lower_z = bins[lower_idx_value + 2]
+        # high_z = bins[higher_idx_value + 2]
+        # return np.clip(masked_depth, lower_z, high_z), hist, bins
     
     def _get_principal_component(
         self,
