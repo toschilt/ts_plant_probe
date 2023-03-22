@@ -38,6 +38,8 @@ catkin_make
 source ./devel/setup.sh
 ```
 
+We also need to change some ZED camera parameters. To do that, copy the files into this repository */params* folder to the *zed-ros-wrapper/zed_wrapper/params* folder.
+
 ## Running
 
 This package is still in development thus some configurations are still done manually in the source files. The needed modifications are shown below.
