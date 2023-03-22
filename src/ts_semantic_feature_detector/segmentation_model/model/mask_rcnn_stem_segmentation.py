@@ -33,7 +33,6 @@ class MaskRCNNStemSegmentationModel:
         Create another structure to encapsulate information about the images. 
     #TODO: Add more explanation about train_log and validation_log dictionaries.
     #TODO: Encapsule some of train method routines in private functions.
-    #FIXME: This implementation can't load and resume training.
     
     Attributes:
         hyperparams: a dictionary containing the hyperparameters values. More
