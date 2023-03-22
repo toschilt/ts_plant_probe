@@ -3,7 +3,6 @@ __pycache__/
 *.png
 *.csv
 *.json
-*.txt
 *.bag
 *.svo
 *.zip
