@@ -1,6 +1,7 @@
 """
 """
 
+import numpy as np
 from typing import List, Tuple
 
 from scipy.spatial.transform import Rotation
@@ -40,5 +41,8 @@ def get_extrinsics(
     ekf_euler = Rotation.from_quat(ekf_quat).as_euler('xyz')
     imu_euler = Rotation.from_quat(imu_quat).as_euler('xyz')
     orientation = [imu_euler[0], imu_euler[1], ekf_euler[2]]
+
+    # Fixes the orientation of the feature detector compared to the EKF
+    orientation[1] += np.pi/2
 
     return position, orientation
