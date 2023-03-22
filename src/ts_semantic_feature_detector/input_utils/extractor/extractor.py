@@ -75,7 +75,8 @@ class DataExtractor():
         """
         rosbag_topics = {
             'ekf': '/terrasentia/ekf',
-            'imu': '/terrasentia/imu',
+            # 'imu': '/terrasentia/imu',
+            'imu': '/terrasentia/zed2/zed_node/imu/data',
             # 'rgb': '/terrasentia/zed2/zed_node/left/image_rect_color/compressed',
             # 'depth': '/terrasentia/zed2/zed_node/depth/depth_registered'
         }
