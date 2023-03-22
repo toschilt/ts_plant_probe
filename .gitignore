@@ -1,5 +1,9 @@
-*.png
 __pycache__/
-checkpoints/
+
+*.png
+*.csv
 *.json
 *.txt
+*.bag
+*.svo
+*.zip
