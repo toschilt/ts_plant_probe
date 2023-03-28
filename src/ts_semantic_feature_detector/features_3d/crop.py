@@ -13,6 +13,7 @@ from ts_semantic_feature_detector.features_2d.masks import Mask
 from ts_semantic_feature_detector.features_2d.masks import MaskGroup
 from ts_semantic_feature_detector.features_3d.camera import StereoCamera
 from ts_semantic_feature_detector.features_3d.ground_plane import GroundPlane
+from ts_semantic_feature_detector.visualization.colors import get_color_from_cluster
 
 class CornCrop:
     """
@@ -25,7 +26,9 @@ class CornCrop:
         average_point: a Numpy array containing the 3D average point
             that describes the crop position.
         crop_vector: a Numpy array containing the 3D vector that
-            describes the crop orientation. 
+            describes the crop orientation.
+        crop_vector_angles: a Numpy array containing the theta and phi
+            angles that describes the vector orientation in the 3D space.
         emerging_point: a Numpy array containing the 3D point where
             the crop intercepts the ground plane.
         filter_data: a list containing the histogram and bins values
@@ -91,6 +94,7 @@ class CornCrop:
 
         self.average_point = np.average(self.ps_3d, axis=0)
         self.crop_vector = self._get_principal_component(self.ps_3d)
+        self.crop_vector_angles = self._get_vector_angles(self.crop_vector)
 
         self.emerging_point = None
 
@@ -196,6 +200,29 @@ class CornCrop:
 
         return pca.components_[0]
     
+    def _get_vector_angles(
+        self,
+        vector: npt.ArrayLike
+    ) -> npt.ArrayLike:
+        """
+        Get theta and phi angles representing vector orientation in 3D space.
+
+        The angle theta is the angle between the Z axis and the vector. The
+        angle phi is the angle between the x axis and the projection of the vector
+        into the XY plane.
+
+        Args:
+            vector: a Numpy array containing the vector coordinates.
+
+        Returns:
+            a Numpy array containing the theta and phi values, respectively.
+        """
+        r = np.linalg.norm(vector, ord=2)
+        theta = np.arctan2(vector[2], r)
+        phi = np.arctan2(vector[1], vector[0])
+
+        return np.array([theta, phi])
+    
     def plot_depth_histogram(
         self,
         rgb_img: npt.ArrayLike,
@@ -254,7 +281,8 @@ class CornCrop:
         data_plot: List = None,
         plot_3d_points: bool = False,
         line_scalars: npt.ArrayLike = None,
-        plot_emerging_point: bool = False
+        plot_emerging_point: bool = False,
+        crop_labels: List = None
     ):
         """
         Plot the corn crop using Plotly library.
@@ -270,10 +298,21 @@ class CornCrop:
                 is not plotted.
             plot_emerging_point: a boolean that indicates if the crop
                 3D emerging point needs to be plotted.
+            crop_labels: a list containing the crops' labels.
         """
+    
         data = []
         if data_plot is not None:
             data = data_plot
+
+        color = ''
+        if crop_labels is not None:
+            cluster = crop_labels.pop()
+
+            if cluster == -1:
+                color = '#000000'
+            else:
+                color = get_color_from_cluster(cluster)
 
         if plot_3d_points:
             data.append(
@@ -281,7 +320,10 @@ class CornCrop:
                     x=self.ps_3d[:, 0],
                     y=self.ps_3d[:, 1],
                     z=self.ps_3d[:, 2],
-                    marker = go.scatter3d.Marker(size=2),
+                    marker = go.scatter3d.Marker(
+                        size=2, 
+                        color=color
+                    ),
                     opacity=0.8,
                     mode='markers'
                 )
@@ -296,7 +338,10 @@ class CornCrop:
                     x=line[:, 0],
                     y=line[:, 1],
                     z=line[:, 2],
-                    marker = go.scatter3d.Marker(size=2),
+                    marker = go.scatter3d.Marker(
+                        size=2, 
+                        color=color
+                    ),
                     opacity=0.8,
                     mode='markers'
                 )
@@ -308,7 +353,10 @@ class CornCrop:
                     x=[self.emerging_point[0]],
                     y=[self.emerging_point[1]],
                     z=[self.emerging_point[2]],
-                    marker = go.scatter3d.Marker(size=4),
+                    marker = go.scatter3d.Marker(
+                        size=4,
+                        color=color
+                    ),
                     opacity=0.8,
                     mode='markers'
                 )
@@ -388,7 +436,8 @@ class CornCropGroup:
         data_plot: List = None,
         plot_3d_points: bool = False,
         line_scalars: npt.ArrayLike = None,
-        plot_emerging_point: bool = False
+        plot_emerging_point: bool = False,
+        crop_labels: List = None
     ):
         """
         Plot the corn group using the Plotly library.
@@ -404,6 +453,7 @@ class CornCropGroup:
                 is not plotted.
             plot_emerging_point: a boolean that indicates if the crop
                 3D emerging point needs to be plotted.
+            crop_labels: a list containing the crops' labels.
         """
         data = []
         if data_plot is not None:
@@ -414,7 +464,8 @@ class CornCropGroup:
                 data,
                 plot_3d_points,
                 line_scalars,
-                plot_emerging_point
+                plot_emerging_point,
+                crop_labels
             )
 
         return data
