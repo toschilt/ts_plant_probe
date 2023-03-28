@@ -91,14 +91,25 @@ class SynchronizedLoader:
 
         return min(time_sizes, key=time_sizes.get)
 
-    def get_sync_data(self):
+    def get_sync_data(
+        self,
+        skip_frames: int = 0
+    ):
         """
         Yields the rosbag and svo data synchronized.
+
+        Args:
+            skip_frames: a integer containing the desired amount
+                of frames that will be skipped at the start.
         """
         low_freq_times = self.times[self.low_freq_topic]
 
+        index = 0
         # For each instance of the low frequency topic
         for time in low_freq_times:
+            if index < skip_frames:
+                index += 1
+                continue
 
             best_fit_data = {}
             # Look for the best data that has the best time fit.
@@ -114,4 +125,6 @@ class SynchronizedLoader:
                 else:
                     best_fit_data[topic] = self.data[topic][best_time_idx]
 
+            best_fit_data['index'] = index
+            index += 1
             yield best_fit_data
