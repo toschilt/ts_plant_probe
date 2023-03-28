@@ -132,6 +132,7 @@ class AgriculturalScene:
 
             crop.average_point = np.average(crop.ps_3d, axis=0)
             crop.crop_vector = crop._get_principal_component(crop.ps_3d)
+            crop.crop_vector_angles = crop._get_vector_angles(crop.crop_vector)
             crop.emerging_point = crop.find_emerging_point(
                 self.ground_plane
             )
@@ -143,9 +144,10 @@ class AgriculturalScene:
         plane_scalars: Tuple[npt.ArrayLike, npt.ArrayLike] = None,
         plot_3d_points_crop: bool = False,
         plot_3d_points_plane: bool = False,
-        plot_emerging_points: bool = False
+        plot_emerging_points: bool = False,
+        crop_labels: List = None
     ):
-        """
+        """aa
         Plot the agricultural scene using the Plotly library.
 
         Args:
@@ -166,6 +168,7 @@ class AgriculturalScene:
                 plane 3D pointclouds needs to be plotted.
             plot_emerging_point: a boolean that indicates if the crop
                 3D emerging point needs to be plotted.
+            crop_labels: a list containing the crops' labels.
         """
 
         data = []
@@ -176,7 +179,8 @@ class AgriculturalScene:
             data,
             plot_3d_points_crop,
             line_scalars,
-            plot_emerging_points
+            plot_emerging_points,
+            crop_labels
         )
         
         self.ground_plane.plot(
