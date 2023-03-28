@@ -210,7 +210,7 @@ class Sort(object):
     self.img_size = img_size
     # -------------------------------------------------------------
 
-  def update(self, dets=np.empty((0, 5)), offset=np.array(None)):
+  def update(self,dets=np.empty((0, 5)), offset=np.array(None)):
     """
     Params:
       dets - a numpy array of detections in the format [[x1,y1,x2,y2,score],[x1,y1,x2,y2,score],...]

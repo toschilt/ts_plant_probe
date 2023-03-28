@@ -9,8 +9,9 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
+from ts_semantic_feature_detector.features_2d.detections import DetectionGroup
+from ts_semantic_feature_detector.features_2d.boxes import Box
 from ts_semantic_feature_detector.features_2d.masks import Mask
-from ts_semantic_feature_detector.features_2d.masks import MaskGroup
 from ts_semantic_feature_detector.features_3d.camera import StereoCamera
 from ts_semantic_feature_detector.features_3d.ground_plane import GroundPlane
 from ts_semantic_feature_detector.visualization.colors import get_color_from_cluster
@@ -22,6 +23,8 @@ class CornCrop:
     Attributes:
         crop_mask: a features_2d.masks.Mask object containing the 2D
             mask that represents this crop. Used for visualization.
+        crop_box: a features_2d.boxes.Box object containing the 2D
+            box that represents this crop.
         ps_3d: a Numpy array containing 3D corn crop points.
         average_point: a Numpy array containing the 3D average point
             that describes the crop position.
@@ -40,6 +43,7 @@ class CornCrop:
         camera: StereoCamera,
         depth_img: Image.Image,
         crop_mask: Mask,
+        crop_box: Box,
         filter_threshold: float = None
     ) -> None:
         """
@@ -57,13 +61,16 @@ class CornCrop:
             depth_img: the PIL Image object containing the depth img
                 from the whole scene. It will be masked in this method.
             crop_mask: the features_2d.masks.Mask object. It contains
-                all the 2D crop information to obtain the 3D crop.
+                the crop 2D mask to obtain the 3D crop.
+            crop_box: the features_2d.boxes.Box object. It contains
+                the crop 2D box to do tracking.
             filter_threshold: a float value containing the threshold to
                 filter the depth data. For more reference, please see
                 documentation for '_filter_crop_depth' method. If it is
                 not provided, the depth is not filtered.
         """
         self.crop_mask = crop_mask
+        self.crop_box = crop_box
 
         # Binary mask indices has data in (height, width) shape
         # Need to swap axis to get analogue x and y indices values
@@ -374,7 +381,7 @@ class CornCropGroup:
 
     def __init__(
         self,
-        mask_group: MaskGroup,
+        detection_group: DetectionGroup,
         camera: StereoCamera,
         depth_img: Image.Image,
         mask_filter_threshold: float = None,
@@ -384,8 +391,8 @@ class CornCropGroup:
         Initializes a corn crop group.
         
         Args:
-            mask_group: a features_2d.masks.MaskGroup object containing all
-                the crops masks.
+            mask_group: a features_2d.detection.DetectionGroup object 
+                containing all the crops masks.
             camera: the features_3d.camera.StereoCamera object. It
                     contains all the stereo camera information to obtain
                     the 3D crops.
@@ -401,11 +408,15 @@ class CornCropGroup:
         """
         
         self.crops = []
-        for mask in mask_group.masks:
+        for mask, box in zip(
+            detection_group.mask_group.data, 
+            detection_group.box_group.data
+        ):
             crop = CornCrop(
                     camera,
                     depth_img,
                     mask,
+                    box,
                     mask_filter_threshold
                 )
             
