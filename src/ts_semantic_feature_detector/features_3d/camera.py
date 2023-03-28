@@ -16,11 +16,13 @@ class StereoCamera:
             matrix values (fx, fy, cx, cy).
         intrinsics_matrix_inv - a 3x3 Numpy array containing the inverse
             intrinsics matrix.
+        size - a tuple containing the image size (width, height)
     """
 
     def __init__(
         self,
         intrinsics: Tuple[int, int, int, int],
+        size: Tuple[int, int]
     ) -> None:
         """
         Initializes the stereo camera.
@@ -28,6 +30,7 @@ class StereoCamera:
         Args:
             intrinsecs - a tuple containing the four stereo camera
                 intrinsics values ([fx, fy, cx, cy]).
+            size - a tuple containing the image size (width, height)
         """
 
         self.intrinsics_matrix = np.array(
@@ -35,6 +38,7 @@ class StereoCamera:
              [0, intrinsics[1], intrinsics[3]],
              [0, 0, 1]])
         self.intrinsics_matrix_inv = np.linalg.inv(self.intrinsics_matrix)
+        self.size = np.array(size)
     
     def get_3d_point(
         self,
@@ -55,6 +59,30 @@ class StereoCamera:
             depth: the depth information related to the 2D point.
         """
         return depth*(self.intrinsics_matrix_inv @ p_2d)
+
+    def get_2d_point(
+        self,
+        p_3d: npt.ArrayLike
+    ):
+        """
+        Gets the 2D point in the image reference frame
+
+        Uses the equation p_2d = 1/z*(K @ p_3d), where p_2d is the
+        2D point vector (in homogenenous coordinates), z is the depth
+        information, K is the intrinsics matrix and p_3d is the 3D point
+        vector. p_2d is in homogeneous coordinates, but p_3d is not. 
+        The scalar 1/z makes the operation correct.
+
+        The depth information can be ignored, as the z coordinate can be
+        equivalently assumed to be 1 as the equation above shows.
+
+        Args:
+            p_3d: the 3D point in homogeneous coordinates ([x, y, z, w]).
+        """
+
+        transformation = np.append(self.intrinsics_matrix, [[0], [0], [0]], axis=1)
+        p_2d = transformation @ p_3d
+        return p_2d[:2] / p_2d[2]
     
     def load_image(
         self,
