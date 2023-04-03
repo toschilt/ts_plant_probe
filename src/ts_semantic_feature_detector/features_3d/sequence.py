@@ -52,7 +52,7 @@ class AgriculturalSequence:
 
     def cluster_crops(
         self,
-        eps: float = 0.15,
+        eps: float = 0.05,
         min_samples: int = 3
     ) -> List:
         """
@@ -68,16 +68,23 @@ class AgriculturalSequence:
         for scene in self.scenes:
             for crop in scene.crop_group.crops:
                 emerging_point = crop.emerging_point
-                angles = crop.crop_vector_angles
+                # angles = crop.crop_vector_angles
 
-                descriptor = np.append(emerging_point, angles)
+                descriptor = emerging_point[:2]
                 descriptors.append(descriptor)
 
         descriptors = np.array(descriptors)
 
         dbscan = DBSCAN(eps=eps, min_samples=min_samples)
         dbscan.fit(descriptors)
-        
+        clusters = list(dbscan.labels_)
+
+        i = 0
+        for scene in self.scenes:
+            for crop in scene.crop_group.crops:
+                crop.cluster = clusters[i]
+                i += 1
+
         return list(dbscan.labels_)
 
     def plot(
