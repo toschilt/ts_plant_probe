@@ -65,7 +65,7 @@ class StereoCamera:
         p_3d: npt.ArrayLike
     ):
         """
-        Gets the 2D point in the image reference frame
+        Gets the 2D point in the image reference frame.
 
         Uses the equation p_2d = 1/z*(K @ p_3d), where p_2d is the
         2D point vector (in homogenenous coordinates), z is the depth
@@ -80,8 +80,8 @@ class StereoCamera:
             p_3d: the 3D point in homogeneous coordinates ([x, y, z, w]).
         """
 
-        transformation = np.append(self.intrinsics_matrix, [[0], [0], [0]], axis=1)
-        p_2d = transformation @ p_3d
+        intrinsics = np.append(self.intrinsics_matrix, [[0], [0], [0]], axis=1)
+        p_2d = intrinsics @ p_3d
         return p_2d[:2] / p_2d[2]
     
     def load_image(
