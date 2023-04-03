@@ -1,354 +1,506 @@
 """
-    SORT: A Simple, Online and Realtime Tracker
-    Copyright (C) 2016-2020 Alex Bewley alex@bewley.ai
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from __future__ import print_function
 
-import os
 import numpy as np
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-
-import glob
-import time
-import argparse
+import numpy.typing as npt
 from filterpy.kalman import KalmanFilter
+from scipy.optimize import linear_sum_assignment
 
-np.random.seed(0)
+from ts_semantic_feature_detector.features_3d.camera import StereoCamera
+from ts_semantic_feature_detector.features_3d.crop import CornCrop
+from ts_semantic_feature_detector.features_3d.sequence import AgriculturalSequence
 
-def linear_assignment(cost_matrix):
-  try:
-    import lap
-    _, x, y = lap.lapjv(cost_matrix, extend_cost=True)
-    return np.array([[y[i],i] for i in x if i >= 0]) #
-  except ImportError:
-    from scipy.optimize import linear_sum_assignment
-    x, y = linear_sum_assignment(cost_matrix)
-    return np.array(list(zip(x, y)))
-
-
-def iou_batch(bb_test, bb_gt):
-  """
-  From SORT: Computes IOU between two bboxes in the form [x1,y1,x2,y2]
-  """
-  bb_gt = np.expand_dims(bb_gt, 0)
-  bb_test = np.expand_dims(bb_test, 1)
-  
-  xx1 = np.maximum(bb_test[..., 0], bb_gt[..., 0])
-  yy1 = np.maximum(bb_test[..., 1], bb_gt[..., 1])
-  xx2 = np.minimum(bb_test[..., 2], bb_gt[..., 2])
-  yy2 = np.minimum(bb_test[..., 3], bb_gt[..., 3])
-  w = np.maximum(0., xx2 - xx1)
-  h = np.maximum(0., yy2 - yy1)
-  wh = w * h
-  o = wh / ((bb_test[..., 2] - bb_test[..., 0]) * (bb_test[..., 3] - bb_test[..., 1])                                      
-    + (bb_gt[..., 2] - bb_gt[..., 0]) * (bb_gt[..., 3] - bb_gt[..., 1]) - wh)                                              
-  return(o)  
-
-
-def convert_bbox_to_z(bbox):
-  """
-  Takes a bounding box in the form [x1,y1,x2,y2] and returns z in the form
-    [x,y,s,r] where x,y is the centre of the box and s is the scale/area and r is
-    the aspect ratio
-  """
-  w = bbox[2] - bbox[0]
-  h = bbox[3] - bbox[1]
-  x = bbox[0] + w/2.
-  y = bbox[1] + h/2.
-  s = w * h    #scale is just area
-  r = w / float(h)
-  return np.array([x, y, s, r]).reshape((4, 1))
-
-
-def convert_x_to_bbox(x,score=None):
-  """
-  Takes a bounding box in the centre form [x,y,s,r] and returns it in the form
-    [x1,y1,x2,y2] where x1,y1 is the top left and x2,y2 is the bottom right
-  """
-  w = np.sqrt(x[2] * x[3])
-  h = x[2] / w
-  if(score==None):
-    return np.array([x[0]-w/2.,x[1]-h/2.,x[0]+w/2.,x[1]+h/2.]).reshape((1,4))
-  else:
-    return np.array([x[0]-w/2.,x[1]-h/2.,x[0]+w/2.,x[1]+h/2.,score]).reshape((1,5))
-
-
-class KalmanBoxTracker(object):
-  """
-  This class represents the internal state of individual tracked objects observed as bbox.
-  """
-  count = 0
-  def __init__(self,bbox):
+class KalmanBoxTracker():
     """
-    Initialises a tracker using initial bounding box.
+    Implements a bounding box tracker with Kalman filter.
+
+    Attributes:
+        crops - a list of features_3d.crop.CornCrop that this tracker
+            refers to.
     """
-    #define constant velocity model
-    self.kf = KalmanFilter(dim_x=7, dim_z=4) 
-    self.kf.F = np.array([[1,0,0,0,1,0,0],[0,1,0,0,0,1,0],[0,0,1,0,0,0,1],[0,0,0,1,0,0,0],  [0,0,0,0,1,0,0],[0,0,0,0,0,1,0],[0,0,0,0,0,0,1]])
-    self.kf.H = np.array([[1,0,0,0,0,0,0],[0,1,0,0,0,0,0],[0,0,1,0,0,0,0],[0,0,0,1,0,0,0]])
 
-    self.kf.R[2:,2:] *= 10.
-    self.kf.P[4:,4:] *= 1000. #give high uncertainty to the unobservable initial velocities
-    self.kf.P *= 10.
-    self.kf.Q[-1,-1] *= 0.01
-    self.kf.Q[4:,4:] *= 0.01
+    # Static attribute to give unique ID's to the trackers.
+    count = 0
 
-    self.kf.x[:4] = convert_bbox_to_z(bbox)
-    self.time_since_update = 0
-    self.id = KalmanBoxTracker.count
-    KalmanBoxTracker.count += 1
-    self.history = []
-    self.hits = 0
-    self.hit_streak = 0
-    self.age = 0
+    def __init__(
+        self,
+        crop: CornCrop
+    ):
+        """
+        Initialize a box tracker.
 
-  def update(self,bbox):
-    """
-    Updates the state vector with observed bbox.
-    """
-    self.time_since_update = 0
-    self.history = []
-    self.hits += 1
-    self.hit_streak += 1
-    self.kf.update(convert_bbox_to_z(bbox))
+        #TODO: update documentation about the state and action vectors.
 
-  def predict(self):
-    """
-    Advances the state vector and returns the predicted bounding box estimate.
-    """
-    if((self.kf.x[6]+self.kf.x[2])<=0):
-      self.kf.x[6] *= 0.0
-    self.kf.predict()
-    self.age += 1
-    if(self.time_since_update>0):
-      self.hit_streak = 0
-    self.time_since_update += 1
-    self.history.append(convert_x_to_bbox(self.kf.x))
-    return self.history[-1]
+        Args:
+            crop: a features_3d.crop.CornCrop object containing
+                information about a single corn crop.
+        """
+        self.kf = KalmanFilter(dim_x=7, dim_z=6, dim_u=2)
 
-  def get_state(self):
-    """
-    Returns the current bounding box estimate.
-    """
-    return convert_x_to_bbox(self.kf.x)
+        # State transition matrix.
+        self.kf.F = np.array([
+            [1, 0, 0, 0, 1, 0, 0],
+            [0, 1, 0, 0, 0, 1, 0],
+            [0, 0, 1, 0, 0, 0, 1],
+            [0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 1]
+        ])
 
+        # Control transition matrix.
+        self.kf.B = np.array([
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [1, 0],
+            [0, 1],
+            [0, 0]
+        ])
 
-def associate_detections_to_trackers(detections,trackers,iou_threshold = 0.3):
-  """
-  Assigns detections to tracked object (both represented as bounding boxes)
+        # Measurement function.
+        self.kf.H = np.array([
+            [1, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0]
+        ])
 
-  Returns 3 lists of matches, unmatched_detections and unmatched_trackers
-  """
-  if(len(trackers)==0):
-    return np.empty((0,2),dtype=int), np.arange(len(detections)), np.empty((0,5),dtype=int)
+        # Process noise 
+        self.kf.Q[:, :] *= 1e6
 
-  iou_matrix = iou_batch(detections, trackers)
+        # Measurement noise
+        # Trust a lot position and displacement of matched detections.
+        self.kf.R *= 10e-6
+        # self.kf.R[:2, :2] *= 10e-3
+        # self.kf.R[4:-1, 4:-1] *= 10e-3
+        # Do not trust scale and ratio changes too much (original implementation).
+        # self.kf.R[2:4,2:4] *= 10.
+        # self.kf.R[-1, -1] *= 10.
 
-  if min(iou_matrix.shape) > 0:
-    a = (iou_matrix > iou_threshold).astype(np.int32)
-    if a.sum(1).max() == 1 and a.sum(0).max() == 1:
-        matched_indices = np.stack(np.where(a), axis=1)
-    else:
-      matched_indices = linear_assignment(-iou_matrix)
-  else:
-    matched_indices = np.empty(shape=(0,2))
+        # Covariance matrix
+        self.kf.P[-1, -1] *= 1000. # High uncertainty to scale velocity.
+        self.kf.P *= 10.
+        
+        self.kf.x[:4] = self._convert_bbox_to_z(crop.crop_box.data)
+        self.time_since_update = 0
+        self.id = KalmanBoxTracker.count
+        KalmanBoxTracker.count += 1
+        self.history = []
+        self.hits = 0
+        self.hit_streak = 0
+        self.age = 0
 
-  unmatched_detections = []
-  for d, det in enumerate(detections):
-    if(d not in matched_indices[:,0]):
-      unmatched_detections.append(d)
-  unmatched_trackers = []
-  for t, trk in enumerate(trackers):
-    if(t not in matched_indices[:,1]):
-      unmatched_trackers.append(t)
+        # Change crop cluster.
+        self.crops = []
+        self.crops.append(crop)
+        self.crops[-1].cluster = self.id
 
-  #filter out matched with low IOU
-  matches = []
-  for m in matched_indices:
-    if(iou_matrix[m[0], m[1]]<iou_threshold):
-      unmatched_detections.append(m[0])
-      unmatched_trackers.append(m[1])
-    else:
-      matches.append(m.reshape(1,2))
-  if(len(matches)==0):
-    matches = np.empty((0,2),dtype=int)
-  else:
-    matches = np.concatenate(matches,axis=0)
+    def _convert_bbox_to_z(
+        self,
+        bbox: npt.ArrayLike
+    ):
+        """
+        Converts a bounding box in format [x1, y1, x2, y2] into [x, y, s, r].
 
-  return matches, np.array(unmatched_detections), np.array(unmatched_trackers)
+        The [x1, y1, x2, y2] is segmentation model output format for bounding
+        boxes, where (x1, y1) describes the top-left point and (x2, y2) the
+        bottom-right point. The [x, y, s, r] is the Kalman filter format, where
+        (x, y) describes the bounding box center coordinates, s is the bounding
+        box area and r is bounding box size ratio.
 
+        Args:
+            - bbox: a Numpy array containing the crop bounding box.
 
-class Sort(object):
-  def __init__(self, img_size, max_age=1, min_hits=3, iou_threshold=0.3):
-    """
-    Sets key parameters for SORT
-    """
-    self.max_age = max_age
-    self.min_hits = min_hits
-    self.iou_threshold = iou_threshold
-    self.trackers = []
-    self.frame_count = 0
+        Returns:
+            a Numpy array containing the bouding box data converted.
+        """
+        w = bbox[2] - bbox[0]
+        h = bbox[3] - bbox[1]
+        x = bbox[0] + w/2.
+        y = bbox[1] + h/2.
+        s = w * h
+        r = w / float(h)
 
-    # -------------------------------------------------------------
-    # Inserting extrinsics information into the pipeline
-    self.img_size = img_size
-    # -------------------------------------------------------------
-
-  def update(self,dets=np.empty((0, 5)), offset=np.array(None)):
-    """
-    Params:
-      dets - a numpy array of detections in the format [[x1,y1,x2,y2,score],[x1,y1,x2,y2,score],...]
-    Requires: this method must be called once for each frame even with empty detections (use np.empty((0, 5)) for frames without detections).
-    Returns the a similar array, where the last column is the object ID.
-
-    NOTE: The number of objects returned may differ from the number of detections provided.
-    """
-    self.frame_count += 1
-
-    # get predicted locations from existing trackers.
-    trks = np.zeros((len(self.trackers), 5))
-    to_del = []
-    ret = []
-
-    for t, trk in enumerate(trks):
-      pos = self.trackers[t].predict()[0]
-      trk[:] = [pos[0], pos[1], pos[2], pos[3], 0]
-
-      # -------------------------------------------------------------
-      # Inserting extrinsics information into the pipeline
-      if offset.any():
-        offset_x = 0
-        offset_y = offset[1]
-        if trk[0] < self.img_size[0]/2:
-            offset_x = offset[0]
+        if len(bbox) > 4:
+            return np.array([x, y, s, r, bbox[4], bbox[5]]).reshape((6, 1))
         else:
-            offset_x = -offset[0]
-
-        trk[0] += offset_x
-        trk[2] += offset_x
-        trk[1] += offset_y
-        trk[3] += offset_y
-      # -------------------------------------------------------------
-
-      if np.any(np.isnan(pos)):
-        to_del.append(t)
-
-    trks = np.ma.compress_rows(np.ma.masked_invalid(trks))
-
-    for t in reversed(to_del):
-      self.trackers.pop(t)
-    matched, unmatched_dets, unmatched_trks = associate_detections_to_trackers(dets,trks, self.iou_threshold)
-
-    # update matched trackers with assigned detections
-    for m in matched:
-      self.trackers[m[1]].update(dets[m[0], :])
-
-    # create and initialise new trackers for unmatched detections
-    for i in unmatched_dets:
-        trk = KalmanBoxTracker(dets[i,:])
-        self.trackers.append(trk)
-    i = len(self.trackers)
-    for trk in reversed(self.trackers):
-        d = trk.get_state()[0]
-        if (trk.time_since_update < 1) and (trk.hit_streak >= self.min_hits or self.frame_count <= self.min_hits):
-          ret.append(np.concatenate((d,[trk.id+1])).reshape(1,-1)) # +1 as MOT benchmark requires positive
-        i -= 1
-        # remove dead tracklet
-        if(trk.time_since_update > self.max_age):
-          self.trackers.pop(i)
-    if(len(ret)>0):
-      return np.concatenate(ret)
-    return np.empty((0,5))
-
-def parse_args():
-    """Parse input arguments."""
-    parser = argparse.ArgumentParser(description='SORT demo')
-    parser.add_argument('--display', dest='display', help='Display online tracker output (slow) [False]',action='store_true')
-    parser.add_argument("--seq_path", help="Path to detections.", type=str, default='data')
-    parser.add_argument("--phase", help="Subdirectory in seq_path.", type=str, default='train')
-    parser.add_argument("--max_age", 
-                        help="Maximum number of frames to keep alive a track without associated detections.", 
-                        type=int, default=1)
-    parser.add_argument("--min_hits", 
-                        help="Minimum number of associated detections before track is initialised.", 
-                        type=int, default=3)
-    parser.add_argument("--iou_threshold", help="Minimum IOU for match.", type=float, default=0.3)
-    args = parser.parse_args()
-    return args
-
-# if __name__ == '__main__':
-#   # all train
-#   args = parse_args()
-#   display = args.display
-#   phase = args.phase
-#   total_time = 0.0
-#   total_frames = 0
-#   colours = np.random.rand(32, 3) #used only for display
-#   if(display):
-#     if not os.path.exists('mot_benchmark'):
-#       print('\n\tERROR: mot_benchmark link not found!\n\n    Create a symbolic link to the MOT benchmark\n    (https://motchallenge.net/data/2D_MOT_2015/#download). E.g.:\n\n    $ ln -s /path/to/MOT2015_challenge/2DMOT2015 mot_benchmark\n\n')
-#       exit()
-#     plt.ion()
-#     fig = plt.figure()
-#     ax1 = fig.add_subplot(111, aspect='equal')
-
-#   if not os.path.exists('output'):
-#     os.makedirs('output')
-#   pattern = os.path.join(args.seq_path, phase, '*', 'det', 'det.txt')
-#   for seq_dets_fn in glob.glob(pattern):
-#     mot_tracker = Sort(max_age=args.max_age, 
-#                        min_hits=args.min_hits,
-#                        iou_threshold=args.iou_threshold) #create instance of the SORT tracker
-#     seq_dets = np.loadtxt(seq_dets_fn, delimiter=',')
-#     seq = seq_dets_fn[pattern.find('*'):].split(os.path.sep)[0]
+            return np.array([x, y, s, r]).reshape((4, 1))
     
-#     with open(os.path.join('output', '%s.txt'%(seq)),'w') as out_file:
-#       print("Processing %s."%(seq))
-#       for frame in range(int(seq_dets[:,0].max())):
-#         frame += 1 #detection and frame numbers begin at 1
-#         dets = seq_dets[seq_dets[:, 0]==frame, 2:7]
-#         dets[:, 2:4] += dets[:, 0:2] #convert to [x1,y1,w,h] to [x1,y1,x2,y2]
-#         total_frames += 1
+    def _convert_x_to_bbox(
+        self,
+        x,
+        score=None
+    ):
+        """
+        Converts a bounding box in format [x, y, s, r] into [x1, y1, x2, y2].
 
-#         if(display):
-#           fn = os.path.join('mot_benchmark', phase, seq, 'img1', '%06d.jpg'%(frame))
-#           im =io.imread(fn)
-#           ax1.imshow(im)
-#           plt.title(seq + ' Tracked Targets')
+        The [x1, y1, x2, y2] is segmentation model output format for bounding
+        boxes, where (x1, y1) describes the top-left point and (x2, y2) the
+        bottom-right point. The [x, y, s, r] is the Kalman filter format, where
+        (x, y) describes the bounding box center coordinates, s is the bounding
+        box area and r is bounding box size ratio.
 
-#         start_time = time.time()
-#         trackers = mot_tracker.update(dets)
-#         cycle_time = time.time() - start_time
-#         total_time += cycle_time
+        Args:
+        """
+        w = np.sqrt(x[2] * x[3])
+        h = x[2] / w
+        if(score==None):
+            return np.array([x[0]-w/2.,x[1]-h/2.,x[0]+w/2.,x[1]+h/2.]).reshape((1,4))
+        else:
+            return np.array([x[0]-w/2.,x[1]-h/2.,x[0]+w/2.,x[1]+h/2.,score]).reshape((1,5))
 
-#         for d in trackers:
-#           print('%d,%d,%.2f,%.2f,%.2f,%.2f,1,-1,-1,-1'%(frame,d[4],d[0],d[1],d[2]-d[0],d[3]-d[1]),file=out_file)
-#           if(display):
-#             d = d.astype(np.int32)
-#             ax1.add_patch(patches.Rectangle((d[0],d[1]),d[2]-d[0],d[3]-d[1],fill=False,lw=3,ec=colours[d[4]%32,:]))
+    def predict(
+        self,
+        motion_2d_offset: npt.ArrayLike
+    ):
+        """
+        Executes the Kalman filter predict step.
 
-#         if(display):
-#           fig.canvas.flush_events()
-#           plt.draw()
-#           ax1.cla()
+        Args:
+            motion_2d_offset: a Numpy array containing the 2D motion offset
+                calculated from the extrinsics information.
+        """
 
-#   print("Total Tracking took: %.3f seconds for %d frames or %.1f FPS" % (total_time, total_frames, total_frames / total_time))
+        # Checks if the new predicted scale will be zero.
+        # If yes, ignores the scale improvement.
+        if((self.kf.x[4] + self.kf.x[2]) <= 0):
+            self.kf.x[4] *= 0.0
 
-#   if(display):
-#     print("Note: to get real runtime results run without the option: --display")
+        # Advances the state vector informing the motion offset
+        # as the control action.
+        self.kf.predict(motion_2d_offset)
+        self.age += 1
+
+        # Updates the time information
+        if self.time_since_update > 0:
+            self.hit_streak = 0
+        self.time_since_update += 1
+
+        self.history.append(
+            self._convert_x_to_bbox(self.kf.x)
+        )
+
+        return self.history[-1]
+    
+    def update(
+        self,
+        detection: npt.ArrayLike
+    ):
+        """
+        Executes the Kalman filter correction step.
+
+        Args:
+            detection: a Numpy array containing the detected bounding box
+                in format [x1, y1, x2, y2].
+        """
+
+        self.time_since_update = 0
+        self.history = []
+        self.hits += 1
+        self.hit_streak += 1
+        self.kf.update(self._convert_bbox_to_z(detection))
+
+    def get_state(
+        self
+    ) -> npt.ArrayLike:
+        """
+        Returns the current bounding box estimate.
+        """
+        return self._convert_x_to_bbox(self.kf.x)
+
+class AgricultureSort():
+    """
+    Modified SORT: A Simple, Online and Realtime Tracker
+
+    Attributes:
+        
+    """
+    def __init__(
+        self,
+        camera: StereoCamera,
+        max_age = 1,
+        min_hits = 3,
+        iou_threshold = 0.3
+    ):
+        """
+        Initialize the SORT object.
+
+        Args:
+            camera: camera: the features_3d.camera.StereoCamera object. It
+                contains all the stereo camera information to project 3D
+                points back into the 2D plane.
+            max_age: an integer indicating the maximum number of frames to 
+                keep alive a track without associated detections.
+            min_hits: an integer indicating the minimum number of associated 
+                detections before track is initialised.
+            iou_threshold: a float indicating the minimum IOU for match.
+        """
+        self.camera = camera
+        self.max_age = max_age
+        self.min_hits = min_hits
+        self.iou_threshold = iou_threshold
+
+        self.trackers = []
+        self.frame_count = 0
+
+    def step(
+        self,
+        sequence: AgriculturalSequence
+    ):
+        """
+        """
+
+        self.frame_count += 1
+
+        # Update crops with the 2D motion offset from extrinsics
+        self.get_crops_motion(sequence)
+
+        # Load information about the Kalman filter prediction step of existing trackers.
+        # Also checks if the prediction is valid. If not, saves the tracker index to
+        # remove it later. 
+        trackers_data = np.zeros((len(self.trackers), 5))
+        to_delete_existing_trackers_idxs = []
+        for t, tracker_data in enumerate(trackers_data):
+            prediction = self.trackers[t].predict(
+                self.trackers[t].crops[-1].estimated_motion_2d
+            )[0]
+            tracker_data[:] = [
+                prediction[0], prediction[1], prediction[2], prediction[3], 0
+            ]
+
+            if np.any(np.isnan(prediction)):
+                to_delete_existing_trackers_idxs.append(t)
+
+        # Filter the extracted data from existing trackers.
+        trackers_data = np.ma.compress_rows(np.ma.masked_invalid(trackers_data))
+
+        # Filter the trackers that does not result in good
+        for t in reversed(to_delete_existing_trackers_idxs):
+            self.trackers.pop(t)
+
+        detections = np.array([crop.crop_box.data for crop in sequence.scenes[-1].crop_group.crops])
+        if not detections.any():
+            detections = np.empty((0, 5))
+
+        matched, unmatched_detections, unmatched_trackers = self._associate_detections_to_trackers(
+            detections,
+            trackers_data,
+            self.iou_threshold
+        )
+
+        # For each founded correspondence, runs the Kalman filter correction step.
+        # Also adds the current crop to the tracker.
+        for m in matched:
+            last_box = self.trackers[m[1]].crops[-1].crop_box.data
+            current_box = detections[m[0], :]
+            diff_2d = np.array(current_box[:2] - last_box[:2])
+            
+            observation = np.concatenate([current_box, diff_2d])
+            self.trackers[m[1]].update(observation)
+
+            # Adds the crop to the tracker. 
+            self.trackers[m[1]].crops.append(sequence.scenes[-1].crop_group.crops[m[0]])
+            self.trackers[m[1]].crops[-1].cluster = self.trackers[m[1]].id
+
+        # Create and initialise new trackers for unmatched detections.
+        for u in unmatched_detections:
+            tracker = KalmanBoxTracker(
+                sequence.scenes[-1].crop_group.crops[u]
+            )
+            self.trackers.append(tracker)
+
+        # Filter the existing trackers by max_age and min_hits.
+        ret = []
+        t = len(self.trackers)
+        for tracker in reversed(self.trackers):
+            if tracker.time_since_update < 1:
+                if (tracker.hit_streak >= self.min_hits) or (self.frame_count <= self.min_hits):
+                    d = tracker.get_state()[0]
+
+                    # # Modify the crop's clusters to match tracker ID.
+                    # for crop in tracker.crops:
+                    #     crop.cluster = tracker.id
+
+                    ret.append(
+                        np.concatenate(
+                            (d, [tracker.id])
+                        ).reshape(1,-1)
+                    ) 
+                t -= 1
+
+                if tracker.time_since_update > self.max_age:
+                    self.trackers.pop(t)
+
+        if len(ret) > 0:
+            return np.concatenate(ret)
+        else:
+            return np.empty((0, 5))
+    
+    def _iou_batch(self, bb_test, bb_gt):
+        """
+        Computes the IOU metric between two bounding boxes in the form [x1, y1, x2, y2]
+        """
+        bb_gt = np.expand_dims(bb_gt, 0)
+        bb_test = np.expand_dims(bb_test, 1)
+        
+        xx1 = np.maximum(bb_test[..., 0], bb_gt[..., 0])
+        yy1 = np.maximum(bb_test[..., 1], bb_gt[..., 1])
+        xx2 = np.minimum(bb_test[..., 2], bb_gt[..., 2])
+        yy2 = np.minimum(bb_test[..., 3], bb_gt[..., 3])
+        w = np.maximum(0., xx2 - xx1)
+        h = np.maximum(0., yy2 - yy1)
+        wh = w * h
+        o = wh / ((bb_test[..., 2] - bb_test[..., 0]) * (bb_test[..., 3] - bb_test[..., 1])                                      
+            + (bb_gt[..., 2] - bb_gt[..., 0]) * (bb_gt[..., 3] - bb_gt[..., 1]) - wh)                                              
+        
+        return(o)
+    
+    def _linear_assignment(
+        self,
+        cost_matrix: npt.ArrayLike
+    ) -> npt.ArrayLike:          
+        """
+        Calculates the best detection/trackers correspondence.
+        
+        Args:
+            cost_matrix: a Numpy array containing negative IOU values for each
+                detection and tracker pair.
+
+        Returns:
+            a Numpy array where each line indicates a correspondance between
+                the first column (detection) and the second one (tracker)
+        """
+        x, y = linear_sum_assignment(cost_matrix)
+        return np.array(list(zip(x, y)))
+
+    def _associate_detections_to_trackers(
+        self,
+        detections,
+        trackers_data,
+        iou_threshold
+    ):
+        """
+        Associates the detections to the existing trackers.
+
+        Args:
+            detections: a Numpy array containing the bounding boxes detected in
+                the current frame.
+            trackers_data: a Numpy array containing the existing bounding boxes
+                from the existing trackers.
+            iou_threshold: a float indicating the minimum IOU for match.
+
+        Returns:
+            Three Numpy arrays. The first one contains the matches between
+            detections and trackers; the second one contains the unmatched
+            detections and the third one contains the unmatched trackers.
+        """
+
+        # If there is not any tracker yet, just return all detections
+        # as unmatched ones.
+        if len(trackers_data) == 0:
+            matched = np.empty((0, 2), dtype=int)
+            unmatched_detections = np.arange(len(detections))
+            unmatched_trackers = np.empty((0, 5), dtype=int)
+            return matched, unmatched_detections, unmatched_trackers
+        
+        # If there are already some trackers, check their IOU metric
+        # with the provided detections
+        iou_matrix = self._iou_batch(detections, trackers_data)
+
+        matched_idxs = None
+        # Checks if there are detections and trackers overlapping
+        if min(iou_matrix.shape) > 0:
+            a = (iou_matrix > iou_threshold).astype(np.int32)
+
+            # Checks if there is only one good detection and tracker correspondence.
+            if a.sum(1).max() == 1 and a.sum(0).max() == 1:
+                matched_idxs = np.stack(np.where(a), axis=1)
+            else:
+                # If not, try to find the better correspondence with Jonker-Volgenant algorithm.
+                matched_idxs = self._linear_assignment(-iou_matrix)
+        else:
+            # If not, just return a empty Numpy array.
+            matched_idxs = np.empty((0, 2))
+
+        # Finds the the detections that don't have a tracker correspondence.
+        unmatched_detections = []
+        for d, detection in enumerate(detections):
+            if d not in matched_idxs[:, 0]:
+                unmatched_detections.append(d)
+
+        # Finds the the trackers that don't have a detection correspondence.
+        unmatched_trackers = []
+        for t, tracker in enumerate(trackers_data):
+            if t not in matched_idxs[:, 1]:
+                unmatched_trackers.append(t)
+
+        matches = []
+        for m in matched_idxs:
+            #Filters the matches that have low IOU (when linear_assignment was used)
+            if iou_matrix[m[0], m[1]] < iou_threshold:
+                unmatched_detections.append(m[0])
+                unmatched_trackers.append(m[1])
+            else:
+                matches.append(m.reshape(1, 2))
+
+        if len(matches) == 0:
+            matches = np.empty((0, 2), dtype=int)
+        else:
+            matches = np.concatenate(matches, axis=0)
+
+        return matches, np.array(unmatched_detections), np.array(unmatched_trackers)
+
+    def get_crops_motion(
+        self,
+        sequence: AgriculturalSequence
+    ):
+        """
+        Calculates a prediction of the crop's position using extrinsics information.
+
+        Args:
+            sequence: a features_3d.sequence.AgriculturalSequence object
+                containing crop information during several scenes.
+        """
+        if len(sequence.scenes) > 1:
+            current_scene = sequence.scenes[-1]
+            prev_scene = sequence.scenes[-2]
+
+            # Get the transformation between the two consecutive scenes and converts it back to origin frame.
+            shift_transform = np.linalg.inv(current_scene.extrinsics) @ current_scene.extrinsics @ np.linalg.inv(prev_scene.extrinsics)
+
+            # print('self.camera.size = ', self.camera.size)
+
+            # For each crop in the previous scene, apply the transformation in the average point.
+            # Calculates the difference between the previous average point with the transformed one.
+            # Project this difference back into the 2D image plane.
+            for prev_crop in prev_scene.crop_group.crops:
+                # Apply the shift to the average point
+                shifted_avg_point = shift_transform @ np.append(prev_crop.average_point, 1)
+                shifted_2d_point = self.camera.get_2d_point(shifted_avg_point)
+
+                # print('prev_crop.average_point = ', prev_crop.average_point)
+                # print('shifted_avg_point = ', shifted_avg_point)
+                # print('shifted_2d_point = ', shifted_2d_point)
+                
+                prev_box = prev_crop.crop_box.data
+                box_center_x = np.average([prev_box[0], prev_box[2]])
+                box_center_y = np.average([prev_box[1], prev_box[3]])
+                box_center = np.array([box_center_x, box_center_y])
+
+                # print('box_center = ', box_center)
+
+                diff_2d = shifted_2d_point - box_center
+                prev_crop.estimated_motion_2d = diff_2d
+                # print('diff_2d = ', diff_2d)
+
+                # Correcting direction of the movement.
+                # prev_box = prev_crop.crop_box.data
+                # if box_center[0] > self.camera.size[0]/2:
+                #     prev_crop.estimated_motion_2d[0] *= -1.
+
+                # Forces the array to be 2D to avoid problems when doing matrix multiplication.
+                prev_crop.estimated_motion_2d = prev_crop.estimated_motion_2d[:, None]
