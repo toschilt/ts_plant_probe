@@ -40,25 +40,15 @@ class AgriculturalSequence:
     def add_scene(
         self,
         scene: AgriculturalScene,
-        camera: StereoCamera
     ):
         """
         Adds a scene to this sequence.
 
         Args:
             scene: a features_3d.scene.AgriculturalScene object to be
-            added.
+                added.
         """
         self.scenes.append(scene)
-
-        if len(self.scenes) > 1:
-            prev_scene = self.scenes[-2]
-            trans_frames = np.linalg.inv(prev_scene.extrinsics) @ scene.extrinsics
-            offset_3d = np.array([trans_frames[0, 3], trans_frames[1, 3], trans_frames[2, 3], trans_frames[3, 3]])
-            offset_2d = camera.get_2d_point(offset_3d)
-            return offset_2d - camera.size/2
-        else:
-            return np.array(None)
 
     def cluster_crops(
         self,
@@ -98,7 +88,7 @@ class AgriculturalSequence:
         plot_3d_points_crop: bool = False,
         plot_3d_points_plane: bool = False,
         plot_emerging_points: bool = False,
-        crop_labels: List = None
+        cluster_threshold: int = 3
     ):
         """
         Plot the agricultural sequence using the Plotly library.
@@ -121,12 +111,23 @@ class AgriculturalSequence:
                 plane 3D pointclouds needs to be plotted.
             plot_emerging_point: a boolean that indicates if the crop
                 3D emerging point needs to be plotted.
-            crop_labels: a list containing the crops' labels.
+            cluster_threshold: a integer that indicates how many occurences
+                a cluster must have to be printed.
         """
 
         data = []
         if data_plot is not None:
             data = data_plot
+
+        clusters = []
+        for scene in self.scenes:
+            for crop in scene.crop_group.crops:
+                clusters.append(crop.cluster)
+
+        cluster_blacklist = [
+            cluster for cluster in clusters if clusters.count(cluster) < cluster_threshold
+        ]
+        cluster_blacklist.append(-1)
 
         for scene in self.scenes:
             scene.plot(
@@ -136,5 +137,5 @@ class AgriculturalSequence:
                 plot_3d_points_crop,
                 plot_3d_points_plane,
                 plot_emerging_points,
-                crop_labels
+                cluster_blacklist
             )
