@@ -48,7 +48,7 @@ class CornCrop:
         depth_img: Image.Image,
         crop_mask: Mask,
         crop_box: Box,
-        filter_threshold: float = None
+        depth_neighbors: int = None
     ) -> None:
         """
         Find the 3D corn crop points.
@@ -69,10 +69,10 @@ class CornCrop:
                 the crop 2D mask to obtain the 3D crop.
             crop_box: the features_2d.boxes.Box object. It contains
                 the crop 2D box to do tracking.
-            filter_threshold: a float value containing the threshold to
-                filter the depth data. For more reference, please see
-                documentation for '_filter_crop_depth' method. If it is
-                not provided, the depth is not filtered.
+            depth_neighbors: a integer value containing the accepted number of 
+                neighbors to the most frequent depth. For more reference, 
+                please see documentation for '_filter_crop_depth' method. 
+                If it is not provided, the depth is not filtered.
         """
         self.crop_mask = crop_mask
         self.crop_box = crop_box
@@ -94,10 +94,10 @@ class CornCrop:
         crop_depth /= float(1e3)
         
         # Filter depth to remove outliers.
-        if filter_threshold is not None:
+        if depth_neighbors is not None:
             crop_depth, hist, bins = self._filter_crop_depth(
                 crop_depth,
-                filter_threshold)
+                depth_neighbors)
             self.filter_data = [hist, bins]
         
         # Get the 3D crop points.
@@ -120,29 +120,24 @@ class CornCrop:
     def _filter_crop_depth(
         self,
         masked_depth: Image.Image,
-        hist_derivative_threshold: float = 2,
+        depth_neighbors: float = 2,
         size_bins: int = 500
     ) -> Tuple[Image.Image, npt.ArrayLike, npt.ArrayLike]:
         """
         Filters the depth image with a distance occurence approach.
 
-        This method calculates the histogram of the image and tries to
-        isolate the closest distances from the most-occurring-distance
-        by thresholding the difference between consecutive distance 
-        occurrences values.
+        Take the most frequent distance and its 'depth_filter_value' neighbors
+        as the depth of the crop. The distance is clipped to the bottom and upper
+        neighbors.
 
         Args:
             masked_depth: the PIL Image object containing the crop masked
                 depth information.
-            hist_derivative_threshold: a float value to be applied as
-                threshold when scanning the difference between consecutive
-                distance occurrences values.
+            depth_neighbors: a integer value indicating how many neighbors
+                will be considered to filter the depth.
             size_bins: a interger value containing the size of the histogram
                 bins.
-
-        #TODO: adds an option to use different approaches to filter.
-        #TODO: update the documentation of the new (and simpler) method.
-
+                
         Returns:
             the PIL Image object containing the filtered depth information.
             a Numpy array containing the histogram values (size i).
@@ -160,8 +155,8 @@ class CornCrop:
         # Find the distance that has the most occurrences
         most_prob_z_bin_idx = np.argmax(hist)
 
-        lowest_bin_idx = most_prob_z_bin_idx - hist_derivative_threshold
-        highest_bin_idx = most_prob_z_bin_idx + hist_derivative_threshold
+        lowest_bin_idx = most_prob_z_bin_idx - depth_neighbors
+        highest_bin_idx = most_prob_z_bin_idx + depth_neighbors
 
         if lowest_bin_idx < 0:
             lowest_bin_idx = 0
@@ -172,36 +167,12 @@ class CornCrop:
         lower_z = bins[lowest_bin_idx]
         high_z = bins[highest_bin_idx]
 
+        print('lowest_bin_idx = ', lowest_bin_idx)
+        print('highest_bin_idx = ', highest_bin_idx)
+        print('lower_z = ', lower_z)
+        print('high_z = ', high_z)
+
         return np.clip(masked_depth, lower_z, high_z), hist, bins
-
-        # most_prob_z_bin = hist[most_prob_z_bin_idx]
-
-        # # Compute histogram derivative and find the points where it is above
-        # # the specified threshold
-        # hist_derivative = np.abs(hist[1:] - hist[:-1])
-
-        # filtered_hist_derivative = hist_derivative > hist_derivative_threshold*most_prob_z_bin
-        
-        # # Find the extremities of the occurence distribution
-        # rising_idx = np.where(~filtered_hist_derivative & np.roll(filtered_hist_derivative,-1))[0]
-        # rising_idx = rising_idx[rising_idx <= most_prob_z_bin_idx]
-        # falling_idx = np.where(~np.roll(filtered_hist_derivative,-1) & filtered_hist_derivative)[0]
-        # falling_idx = falling_idx[falling_idx >= most_prob_z_bin_idx]
-
-        # if rising_idx.any():
-        #     lower_idx_value = rising_idx[-1]
-        # else:
-        #     lower_idx_value = 0
-
-        # if falling_idx.any():
-        #     higher_idx_value = falling_idx[0]
-        # else:
-        #     higher_idx_value = len(bins) - 3
-
-        # # Use the depth at the extremities to clip the depth values
-        # lower_z = bins[lower_idx_value + 2]
-        # high_z = bins[higher_idx_value + 2]
-        # return np.clip(masked_depth, lower_z, high_z), hist, bins
     
     def _get_principal_component(
         self,
