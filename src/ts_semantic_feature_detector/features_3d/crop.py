@@ -36,6 +36,10 @@ class CornCrop:
             the crop intercepts the ground plane.
         filter_data: a list containing the histogram and bins values
             obtained from the depth filtering.
+        estimated_motion_2d: a tuple containing the 2D estimated motion of
+            this crop considering extrinsics information from the moment
+            that this is constructed and the next moment.
+        cluster: indicates the cluster number that this crop belongs to.
     """
 
     def __init__(
@@ -53,6 +57,7 @@ class CornCrop:
         calculate the 3D points.
 
         #TODO: visualize data from depth filtering
+        #TODO: clean _get_vector_angles method
 
         Args:
             camera: the features_3d.camera.StereoCamera object. It
@@ -88,22 +93,29 @@ class CornCrop:
         crop_depth = np.array(crop_depth).astype(float)
         crop_depth /= float(1e3)
         
+        # Filter depth to remove outliers.
         if filter_threshold is not None:
             crop_depth, hist, bins = self._filter_crop_depth(
                 crop_depth,
                 filter_threshold)
             self.filter_data = [hist, bins]
         
+        # Get the 3D crop points.
         self.ps_3d = []
         for p_2d, z in zip(ps_2d, crop_depth):
             self.ps_3d.append(camera.get_3d_point(p_2d, z))
         self.ps_3d = np.array(self.ps_3d)
 
+        # Get 3D features.
         self.average_point = np.average(self.ps_3d, axis=0)
         self.crop_vector = self._get_principal_component(self.ps_3d)
         self.crop_vector_angles = self._get_vector_angles(self.crop_vector)
-
         self.emerging_point = None
+
+        # Tracking data
+        self.average_depth = self.average_point[2]
+        self.estimated_motion_2d = 0
+        self.cluster = -1
 
     def _filter_crop_depth(
         self,
@@ -289,7 +301,7 @@ class CornCrop:
         plot_3d_points: bool = False,
         line_scalars: npt.ArrayLike = None,
         plot_emerging_point: bool = False,
-        crop_labels: List = None
+        cluster_blacklist: List = None
     ):
         """
         Plot the corn crop using Plotly library.
@@ -306,6 +318,8 @@ class CornCrop:
             plot_emerging_point: a boolean that indicates if the crop
                 3D emerging point needs to be plotted.
             crop_labels: a list containing the crops' labels.
+            cluster_blacklist: a list containing the clusters that must be
+                ignored.
         """
     
         data = []
@@ -313,13 +327,10 @@ class CornCrop:
             data = data_plot
 
         color = ''
-        if crop_labels is not None:
-            cluster = crop_labels.pop()
-
-            if cluster == -1:
-                color = '#000000'
-            else:
-                color = get_color_from_cluster(cluster)
+        if self.cluster not in cluster_blacklist:
+            color = get_color_from_cluster(self.cluster)
+        else:
+            color = '#000000'
 
         if plot_3d_points:
             data.append(
@@ -448,7 +459,7 @@ class CornCropGroup:
         plot_3d_points: bool = False,
         line_scalars: npt.ArrayLike = None,
         plot_emerging_point: bool = False,
-        crop_labels: List = None
+        cluster_blacklist: List = None
     ):
         """
         Plot the corn group using the Plotly library.
@@ -465,6 +476,8 @@ class CornCropGroup:
             plot_emerging_point: a boolean that indicates if the crop
                 3D emerging point needs to be plotted.
             crop_labels: a list containing the crops' labels.
+            cluster_blacklist: a list containing the clusters that must be
+                ignored.
         """
         data = []
         if data_plot is not None:
@@ -476,7 +489,7 @@ class CornCropGroup:
                 plot_3d_points,
                 line_scalars,
                 plot_emerging_point,
-                crop_labels
+                cluster_blacklist
             )
 
         return data
