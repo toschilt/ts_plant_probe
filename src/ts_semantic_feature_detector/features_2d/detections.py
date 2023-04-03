@@ -125,6 +125,8 @@ class DetectionGroup:
                     key=lambda det: det[0].x_bottom 
                 )
             )
+            self.mask_group.data = list(self.mask_group.data)
+            self.box_group.data = list(self.box_group.data)
 
             # Gets the x_bottom values and calculates the distance between them. Finds the indices
             # that are smaller than the threshold.
