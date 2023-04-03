@@ -117,6 +117,9 @@ class CornCrop:
         self.estimated_motion_2d = 0
         self.cluster = -1
 
+        # Output data
+        self.emerging_point_local_frame = None
+
     def _filter_crop_depth(
         self,
         masked_depth: Image.Image,
@@ -399,6 +402,10 @@ class CornCropGroup:
             
             if ground_plane is not None:
                 crop.find_emerging_point(ground_plane)
+
+                # Creates a copy of the emerging point in the local frame.
+                # The original variable can store the emerging point with extrinsic information.
+                crop.emerging_point_local_frame = crop.emerging_point
 
             self.crops.append(crop)
 
