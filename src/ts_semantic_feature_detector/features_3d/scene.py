@@ -58,12 +58,34 @@ class AgriculturalScene:
         """
         ext_hom_3d = extrinsics @ np.append(vector_3d, 1)
         return ext_hom_3d[:-1]/ext_hom_3d[-1]
-        
 
-    def add_extrinsics_information(
+    def get_transformation_matrix(
         self,
         translation: List,
         rotation: List
+    ):
+        R_yaw = np.array(
+            [[np.cos(rotation[2]), -np.sin(rotation[2]), 0],
+            [np.sin(rotation[2]), np.cos(rotation[2]), 0],
+            [0, 0, 1]])
+        R_pitch = np.array(
+            [[np.cos(rotation[1]), 0, np.sin(rotation[1])],
+            [0, 1, 0],
+            [-np.sin(rotation[1]), 0, np.cos(rotation[1])]])
+        R_roll = np.array(
+            [[1, 0, 0],
+            [0, np.cos(rotation[0]), -np.sin(rotation[0])],
+            [0, np.sin(rotation[0]), np.cos(rotation[0])]])
+        R = R_yaw @ R_pitch @ R_roll
+        t = np.array([translation[0], translation[1], translation[2]])[:, None]
+        return np.vstack((np.hstack((R, t)), [0, 0, 0, 1]))
+
+    def add_extrinsics_information(
+        self,
+        pos_world_body: List, 
+        orient_world_body: List,
+        pos_camera_body: List,
+        orient_camera_body: List
     ):
         """
         Adds extrinsics information to the scene.
@@ -82,22 +104,14 @@ class AgriculturalScene:
             power.
         """
         if self.extrinsics is None:
-            # Get the extrinsics matrix.
-            R_yaw = np.array(
-                [[np.cos(rotation[2]), -np.sin(rotation[2]), 0],
-                [np.sin(rotation[2]), np.cos(rotation[2]), 0],
-                [0, 0, 1]])
-            R_pitch = np.array(
-                [[np.cos(rotation[1]), 0, np.sin(rotation[1])],
-                [0, 1, 0],
-                [-np.sin(rotation[1]), 0, np.cos(rotation[1])]])
-            R_roll = np.array(
-                [[1, 0, 0],
-                [0, np.cos(rotation[0]), -np.sin(rotation[0])],
-                [0, np.sin(rotation[0]), np.cos(rotation[0])]])
-            R = R_yaw @ R_pitch @ R_roll
-            t = np.array([translation[0], translation[1], translation[2]])[:, None]
-            self.extrinsics = np.vstack((np.hstack((R, t)), [0, 0, 0, 1]))
+            # Transformation between world and body frame (EKF)
+            t_world_body = self.get_transformation_matrix(pos_world_body, orient_world_body)
+
+            # Transformation between body to camera.
+            t_camera_body = self.get_transformation_matrix(pos_camera_body, orient_camera_body)
+            t_body_camera = np.linalg.inv(t_camera_body)
+
+            self.extrinsics = t_world_body @ t_body_camera
 
         # Modfying the ground plane
         for i in range(len(self.ground_plane.ps_3d)):
@@ -145,9 +159,9 @@ class AgriculturalScene:
         plot_3d_points_crop: bool = False,
         plot_3d_points_plane: bool = False,
         plot_emerging_points: bool = False,
-        crop_labels: List = None
+        cluster_blacklist: List = None
     ):
-        """aa
+        """
         Plot the agricultural scene using the Plotly library.
 
         Args:
@@ -168,7 +182,8 @@ class AgriculturalScene:
                 plane 3D pointclouds needs to be plotted.
             plot_emerging_point: a boolean that indicates if the crop
                 3D emerging point needs to be plotted.
-            crop_labels: a list containing the crops' labels.
+            cluster_blacklist: a list containing the clusters that must be
+                ignored.
         """
 
         data = []
@@ -180,7 +195,7 @@ class AgriculturalScene:
             plot_3d_points_crop,
             line_scalars,
             plot_emerging_points,
-            crop_labels
+            cluster_blacklist
         )
         
         self.ground_plane.plot(
