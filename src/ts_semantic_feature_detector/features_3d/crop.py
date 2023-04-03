@@ -137,7 +137,7 @@ class CornCrop:
                 will be considered to filter the depth.
             size_bins: a interger value containing the size of the histogram
                 bins.
-                
+
         Returns:
             the PIL Image object containing the filtered depth information.
             a Numpy array containing the histogram values (size i).
@@ -166,11 +166,6 @@ class CornCrop:
 
         lower_z = bins[lowest_bin_idx]
         high_z = bins[highest_bin_idx]
-
-        print('lowest_bin_idx = ', lowest_bin_idx)
-        print('highest_bin_idx = ', highest_bin_idx)
-        print('lower_z = ', lower_z)
-        print('high_z = ', high_z)
 
         return np.clip(masked_depth, lower_z, high_z), hist, bins
     
