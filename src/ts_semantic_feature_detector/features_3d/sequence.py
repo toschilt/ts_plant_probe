@@ -48,6 +48,9 @@ class AgriculturalSequence:
             scene: a features_3d.scene.AgriculturalScene object to be
                 added.
         """
+        for old_scene in self.scenes:
+            old_scene.age += 1
+
         self.scenes.append(scene)
 
     def cluster_crops(
@@ -85,7 +88,19 @@ class AgriculturalSequence:
                 crop.cluster = clusters[i]
                 i += 1
 
-        return list(dbscan.labels_)
+        return clusters
+    
+    def remove_old_scenes(
+        self,
+        max_age: int = 200
+    ):
+        """
+        Removes old scenes from the sequence.
+
+        Args:
+            max_age: the maximum age of a scene to be removed.
+        """
+        self.scenes = [scene for scene in self.scenes if scene.age < max_age]
 
     def plot(
         self,

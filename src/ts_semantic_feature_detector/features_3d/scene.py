@@ -24,6 +24,8 @@ class AgriculturalScene:
             It can be applied to all agricultural scene components. If it
             is not informed, the add_extrinsics_information function must
             be called.
+        age: a integer indicating the age of the scene. It is used to
+            remove old scenes from the sequence.
     """
 
     def __init__(
@@ -35,6 +37,7 @@ class AgriculturalScene:
         self.crop_group = crop_group
         self.ground_plane = ground_plane
         self.extrinsics = extrinsics
+        self.age = 0
 
     def _apply_extrinsics_to_3D_vector(
         self,
