@@ -1,10 +1,13 @@
 """
 """
+import os
 
 from typing import List
+import numpy as np
 import numpy.typing as npt
 
 from ts_semantic_feature_detector.features_3d.scene import AgriculturalScene
+from ts_semantic_feature_detector.perfomance.timer import Timer
 
 class OutputWriter:
     """
@@ -21,6 +24,7 @@ class OutputWriter:
         self,
         odometry_file: str,
         points_file: str,
+        times_file: str,
         separator: str = ',',
     ):
         """
@@ -35,12 +39,15 @@ class OutputWriter:
 
         self.odom_file = odometry_file
         self.points_file = points_file
+        self.times_file = times_file
         self.separator = separator
 
         # Create files or clear them if they already exist
         with open(self.odom_file, 'w+') as f:
             f.write('')
         with open(self.points_file, 'w+') as f:
+            f.write('')
+        with open(self.times_file, 'w+') as f:
             f.write('')
 
     def write_odometry_factors(
@@ -94,3 +101,31 @@ class OutputWriter:
                         f'{str(point[1])}{self.separator}'
                         f'{str(point[2])}\n'
                     )
+
+    def write_times(
+        self,
+        timer: Timer
+    ):
+        """
+        Writes the times to the times file.
+        
+        Args:
+            timer: a Timer object containing the times.
+        """
+
+        if os.path.getsize(self.times_file) == 0:
+            with open(self.times_file, 'a') as f:
+                for key in timer.measurements.keys():
+                    f.write(f'{key}{self.separator}')
+            
+            with open(self.times_file, 'a') as f:
+                f.write('\n')
+
+        with open(self.times_file, 'a') as f:
+            for key in timer.measurements.keys():
+                f.write(f'{str(timer.measurements[key][-1])}{self.separator}')
+            f.write('\n')
+
+            for key in timer.measurements.keys():
+                meas = np.array(timer.measurements[key])
+                f.write(f'{str(np.average(meas))}{self.separator}')
