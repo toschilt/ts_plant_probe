@@ -46,6 +46,15 @@ class DetectionGroup:
         self.mask_group = MaskGroup(masks, binary_threshold)
         self.scores = scores
 
+    def is_empty(
+        self
+    ) -> bool:
+        """
+        Returns True if there is no detection in this group.
+        """
+
+        return len(self.mask_group.data) == 0
+
     def metric_filtering(
         self,
         type: str,

@@ -108,18 +108,19 @@ class GroundPlane:
             self.ps_3d.append(camera.get_3d_point(p_2d, z))
         self.ps_3d = np.array(self.ps_3d)
 
-        # Find the point and vectors that describe the ground plane.
-        self.average_point = np.average(self.ps_3d, axis=0)
-        self.ground_vectors = self._get_principal_components(self.ps_3d)
-        self.normal_vector = np.cross(
-            self.ground_vectors[0],
-            self.ground_vectors[1]
-        )
+        if self.ps_3d.shape[0] > 0:
+            # Find the point and vectors that describe the ground plane.
+            self.average_point = np.average(self.ps_3d, axis=0)
+            self.ground_vectors = self._get_principal_components(self.ps_3d)
+            self.normal_vector = np.cross(
+                self.ground_vectors[0],
+                self.ground_vectors[1]
+            )
 
-        self.coeficients = self._get_plane_coefficients(
-            self.normal_vector,
-            self.average_point
-        )
+            self.coeficients = self._get_plane_coefficients(
+                self.normal_vector,
+                self.average_point
+            )
 
     def _get_plane_coefficients(
         self,

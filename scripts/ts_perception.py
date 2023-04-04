@@ -89,7 +89,7 @@ class TerraSentiaPerception:
         v_3d = Visualizer3D()
 
         see_sequence = 10
-        for data in self.sync_loader.get_sync_data():
+        for data in self.sync_loader.get_sync_data(1000):
             rospy.loginfo(f'Getting agricultural scene [{data["index"]}]...')
 
             rospy.loginfo('Getting extrinsics...')
@@ -117,74 +117,75 @@ class TerraSentiaPerception:
             detections.filter_redundancy(x_coordinate_threshold=20)
 
             # Check if there are any valid detections.
-            if not detections.mask_group.data:
-                continue
+            if not detections.is_empty():
+                rospy.loginfo('Getting the ground plane...')
+                gp = GroundPlane(
+                    data['rgb'],
+                    'threshold_gaussian',
+                    self.camera,
+                    data['depth'],
+                    {
+                        'hLow': 74,
+                        'sLow': 0,
+                        'vLow': 3,
+                        'sHigh': 63,
+                        'hHigh': 205,
+                        'vHigh': 203,
+                        'gaussian_filter': 12
+                    }
+                )
 
-            rospy.loginfo('Getting the ground plane...')
-            gp = GroundPlane(
-                data['rgb'],
-                'threshold_gaussian',
-                self.camera,
-                data['depth'],
-                {
-                    'hLow': 74,
-                    'sLow': 0,
-                    'vLow': 3,
-                    'sHigh': 63,
-                    'hHigh': 205,
-                    'vHigh': 203,
-                    'gaussian_filter': 12
-                }
-            )
+                rospy.loginfo('Getting the 3D points...')
+                crop_group = CornCropGroup(
+                    detections,
+                    self.camera,
+                    data['depth'],
+                    mask_filter_threshold=2,
+                    ground_plane=gp
+                )
 
-            rospy.loginfo('Getting the 3D points...')
-            crop_group = CornCropGroup(
-                detections,
-                self.camera,
-                data['depth'],
-                mask_filter_threshold=2,
-                ground_plane=gp
-            )
+                rospy.loginfo('Adding extrinsics to the 3D points...')
+                scene = AgriculturalScene(crop_group, gp)
+                scene.add_extrinsics_information(
+                    p_world_body,
+                    orient_world_body,
+                    p_camera_body,
+                    orient_camera_body
+                )
+                sequence.add_scene(scene)
 
-            rospy.loginfo('Adding extrinsics to the 3D points...')
-            scene = AgriculturalScene(crop_group, gp)
-            scene.add_extrinsics_information(
-                p_world_body,
-                orient_world_body,
-                p_camera_body,
-                orient_camera_body
-            )
-            sequence.add_scene(scene)
+                # rospy.loginfo('Tracking boxes...')
+                # self.tracker.step(sequence)
 
-            # rospy.loginfo('Tracking boxes...')
-            # self.tracker.step(sequence)
+                rospy.loginfo('Clustering crops...')
+                sequence.cluster_crops()
 
-            rospy.loginfo('Clustering crops...')
-            sequence.cluster_crops()
+                rospy.loginfo('Writing emerging points...')
+                self.output_writer.write_emerging_points(
+                    data['index'],
+                    scene
+                )
 
-            rospy.loginfo('Writing emerging points...')
-            self.output_writer.write_emerging_points(
-                data['index'],
-                scene
-            )
+                rospy.loginfo('Filtering old scenes...')
+                sequence.remove_old_scenes(max_age=200)
 
-            rospy.loginfo('Filtering old scenes...')
-            sequence.remove_old_scenes(max_age=200)
+            # if sequence.scenes:
+                # rospy.loginfo('Plotting...')
 
-            rospy.loginfo('Plotting...')
-            # self.plot_tracking(
-            #     data,
-            #     sequence,
-            #     detections,
-            #     plot_predictions=True,
-            #     save_fig=False
-            # )
-            self.plot_3d(
-                data,
-                sequence,
-                v_3d,
-                see_sequence=see_sequence
-            )
+                # self.plot_tracking(
+                #     data,
+                #     sequence,
+                #     detections,
+                #     plot_predictions=False,
+                #     save_fig=False
+                # )
+                
+                # self.plot_3d(
+                #     data,
+                #     sequence,
+                #     v_3d,
+                #     see_sequence=see_sequence
+                # )
 
     def plot_tracking(
         self, 
@@ -246,7 +247,6 @@ class TerraSentiaPerception:
     ):
 
         if data['index'] % see_sequence == 0:
-            rospy.loginfo('Plotting sequence...')
             v_3d.data.clear()
 
             sequence.plot(
