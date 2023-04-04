@@ -21,8 +21,10 @@ from ts_semantic_feature_detector.input_utils.loaders.sync_loader import Synchro
 from ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation import MaskRCNNStemSegmentationModel
 from ts_semantic_feature_detector.segmentation_model.ts_dataset.ts_load_dataset import TerraSentiaDataset
 from ts_semantic_feature_detector.features_2d.tracking import *
+from ts_semantic_feature_detector.visualization.colors import get_color_from_cluster
 from ts_semantic_feature_detector.visualization.visualizer_2d import Visualizer2D
 from ts_semantic_feature_detector.visualization.visualizer_3d import Visualizer3D
+from ts_semantic_feature_detector.output_utils.writer import OutputWriter
 
 class TerraSentiaPerception:
 
@@ -72,6 +74,13 @@ class TerraSentiaPerception:
             iou_threshold=0.1
         )
 
+        rospy.loginfo('Loading output writer...')
+        self.output_writer = OutputWriter(
+            self.rospack.get_path('ts_semantic_feature_detector') + '/output/odometry_factors.txt',
+            self.rospack.get_path('ts_semantic_feature_detector') + '/output/emerging_points.txt',
+            ','
+        )
+
         rospy.loginfo('Getting started...')
         self.main()      
     
@@ -80,15 +89,23 @@ class TerraSentiaPerception:
         v_3d = Visualizer3D()
 
         see_sequence = 10
-        for data in self.sync_loader.get_sync_data(1000):
-            rospy.loginfo('Getting agricultural scene...')
+        for data in self.sync_loader.get_sync_data():
+            rospy.loginfo(f'Getting agricultural scene [{data["index"]}]...')
 
+            rospy.loginfo('Getting extrinsics...')
+            p_world_body, orient_world_body, p_camera_body, orient_camera_body = get_extrinsics(
+                data['ekf'],
+                data['imu']
+            )
+
+            rospy.loginfo('Writing robot pose...')
+            self.output_writer.write_odometry_factors(
+                data['index'],
+                data['ekf']
+            )
+            
             rospy.loginfo('Getting masks and boxes...')
             __, boxes, masks, scores = self.model.inference(data['rgb'])
-
-            # Check if at least one mask was detected. If not, skip the frame.
-            if not masks.any():
-                continue
 
             detections = DetectionGroup(
                 boxes,
@@ -99,11 +116,9 @@ class TerraSentiaPerception:
             detections.metric_filtering('score', score_threshold=0.5)
             detections.filter_redundancy(x_coordinate_threshold=20)
 
-            rospy.loginfo('Getting extrinsics...')
-            p_world_body, orient_world_body, p_camera_body, orient_camera_body = get_extrinsics(
-                data['ekf'],
-                data['imu']
-            )
+            # Check if there are any valid detections.
+            if not detections.mask_group.data:
+                continue
 
             rospy.loginfo('Getting the ground plane...')
             gp = GroundPlane(
@@ -141,63 +156,113 @@ class TerraSentiaPerception:
             )
             sequence.add_scene(scene)
 
-            rospy.loginfo('Tracking boxes...')
-            self.tracker.step(sequence)
+            # rospy.loginfo('Tracking boxes...')
+            # self.tracker.step(sequence)
 
-            # fig, ax = plt.subplots()
-            # ax.imshow(data['rgb'])
-            # for crop in sequence.scenes[-1].crop_group.crops:
-            #     track = crop.crop_box.data
-            #     ax.add_patch(
-            #         patches.Rectangle(
-            #         (track[0], track[1]),
-            #         track[2] - track[0],
-            #         track[3] - track[1],
-            #         linewidth=3,
-            #         edgecolor=get_color_from_cluster(int(crop.cluster)),
-            #         facecolor='none')
-            #     )
+            rospy.loginfo('Clustering crops...')
+            sequence.cluster_crops()
 
-            # if len(sequence.scenes) > 1:
-            #     for crop in sequence.scenes[-2].crop_group.crops:
-            #         track = crop.crop_box.data
-            #         offset = crop.estimated_motion_2d
-            #         ax.add_patch(
-            #             patches.Rectangle(
-            #             (track[0] + offset[0], track[1] + offset[1]),
-            #             track[2] + offset[0] - track[0],
-            #             track[3] + offset[1] - track[1],
-            #             linewidth=3,
-            #             edgecolor='#FF0000',
-            #             facecolor='none')
-            #         )
-            # detections.mask_group.plot(0.5)
-            # plt.show()
-            # plt.savefig(
-            #     '/home/daslab/Documents/dev/catkin_ws/src/ts_semantic_feature_detector/log/'
-            #     + str(data['index'])
-            #     + '.png'
+            rospy.loginfo('Writing emerging points...')
+            self.output_writer.write_emerging_points(
+                data['index'],
+                scene
+            )
+
+            rospy.loginfo('Filtering old scenes...')
+            sequence.remove_old_scenes(max_age=200)
+
+            rospy.loginfo('Plotting...')
+            # self.plot_tracking(
+            #     data,
+            #     sequence,
+            #     detections,
+            #     plot_predictions=True,
+            #     save_fig=False
             # )
-            plt.close()
+            self.plot_3d(
+                data,
+                sequence,
+                v_3d,
+                see_sequence=see_sequence
+            )
 
-            if data['index'] != 520 and data['index'] % see_sequence == 0:
-                rospy.loginfo('Plotting sequence...')
-                v_3d.data.clear()
+    def plot_tracking(
+        self, 
+        data,
+        sequence,
+        detections,
+        plot_predictions=False,
+        save_fig=False,
+    ):
+        fig, ax = plt.subplots()
+        ax.imshow(data['rgb'])
+        detections.mask_group.plot(0.5)
 
-                sequence.plot(
-                    data_plot=v_3d.data,
-                    line_scalars=np.linspace(-0.5, 0.5, 100),
-                    # plane_scalars=(
-                    #     np.linspace(-500, 600, 100),
-                    #     np.linspace(0, 1300, 100)
-                    # ),
-                    plot_3d_points_crop=False,
-                    plot_emerging_points=True,
-                    plot_3d_points_plane=False,
-                    cluster_threshold=3
+        # Plot box detections
+        for crop in sequence.scenes[-1].crop_group.crops:
+            track = crop.crop_box.data
+            ax.add_patch(
+                patches.Rectangle(
+                (track[0], track[1]),
+                track[2] - track[0],
+                track[3] - track[1],
+                linewidth=3,
+                edgecolor=get_color_from_cluster(int(crop.cluster)),
+                facecolor='none')
+            )
+
+        # Plot predicted boxes
+        if plot_predictions and len(sequence.scenes) > 1:
+            for crop in sequence.scenes[-2].crop_group.crops:
+                track = crop.crop_box.data
+                offset = crop.estimated_motion_2d
+                ax.add_patch(
+                    patches.Rectangle(
+                    (track[0] + offset[0], track[1] + offset[1]),
+                    track[2] + offset[0] - track[0],
+                    track[3] + offset[1] - track[1],
+                    linewidth=3,
+                    edgecolor='#FF0000',
+                    facecolor='none')
                 )
-                    
-                v_3d.show()
+        
+        if save_fig:
+            plt.savefig(
+                '/home/daslab/Documents/dev/catkin_ws/src/ts_semantic_feature_detector/log/'
+                + str(data['index'])
+                + '.png'
+            )
+        else:
+            plt.show()
+
+        plt.close()
+
+    def plot_3d(
+        self,
+        data,
+        sequence,
+        v_3d,
+        see_sequence
+    ):
+
+        if data['index'] % see_sequence == 0:
+            rospy.loginfo('Plotting sequence...')
+            v_3d.data.clear()
+
+            sequence.plot(
+                data_plot=v_3d.data,
+                line_scalars=np.linspace(-0.5, 0.5, 100),
+                # plane_scalars=(
+                #     np.linspace(-500, 600, 100),
+                #     np.linspace(0, 1300, 100)
+                # ),
+                plot_3d_points_crop=False,
+                plot_emerging_points=True,
+                plot_3d_points_plane=False,
+                cluster_threshold=3
+            )
+                
+            v_3d.show()
 
     def signal_handler(self, sig, frame):
         print('Exiting...')
@@ -205,32 +270,3 @@ class TerraSentiaPerception:
 
 if __name__ == '__main__':
     TerraSentiaPerception()
-
-# ----------------------------------------------------------
-# v_3d.data.clear()
-# scene.plot(
-#     data_plot=v_3d.data,
-#     line_scalars=np.linspace(-0.5, 0.5, 100),
-#     # plane_scalars=(
-#     #     np.linspace(-500, 600, 100),
-#     #     np.linspace(0, 1300, 100)
-#     # ),
-#     plot_3d_points_crop=True,
-#     plot_emerging_points=True,
-#     plot_3d_points_plane=False
-# )
-# v_3d.show()
-
-
-
-# rospy.loginfo('Plotting 2D image with masks...')
-# v_2d = Visualizer2D()
-# v_2d.plot_mask_group(
-#     mask_group,
-#     data['rgb'],
-#     None,
-#     # 'r--',
-#     # 'b.',
-#     0.5
-# )
-# v_2d.show()
