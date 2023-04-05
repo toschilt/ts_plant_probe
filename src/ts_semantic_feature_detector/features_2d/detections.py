@@ -1,5 +1,9 @@
 """
+Encapsulates functions that deal with the detection of features in 2D images.
+
+It's only necessary to apply filtering simultaneously to the masks and boxes.
 """
+
 import numpy as np
 import numpy.typing as npt
 
@@ -12,9 +16,9 @@ class DetectionGroup:
     Agroup masks and stems groups to do filtering. 
 
     Attributes:
-        boxes - a features_2d.boxes.BoxGroup object containing the boxes.
-        masks - a features_2d.masks.MaskGroup object containing all the masks.
-        scores - a Numpy array containing the inference scores.
+        boxes (:obj:`features_2d.boxes.BoxGroup`): the detected boxes group.
+        masks (:obj:`features_2d.boxes.MaskGroup`): the detected masks group.
+        scores (:obj:`np.ndarray`): the inference scores.
     """
 
     def __init__(
@@ -28,20 +32,18 @@ class DetectionGroup:
         Initializes a single detection.
 
         Args:
-            boxes - a Numpy array containing the masks with shape
-                (num_boxes, 4). This is the same format outputted 
-                by the Mask RCNN network.
-            masks - a Numpy array containing the masks with shape
+            boxes (:obj:`np.ndarray`): the masks with shape (num_boxes, 4). 
+                This is the same format outputted by the Mask RCNN network.
+            masks (:obj:`np.ndarray`): the masks with shape 
                 (num_masks, color_channel, height, width). This is the same
                 format outputted by the Mask RCNN network.
-            scores - a Numpy array containing the inference scores provided by
+            scores (:obj:`np.ndarray`): the inference scores provided by
                 the network. Masks and scores must be at the same corresponding
                 order.
-            binary_threshold - a float number representing the threshold with
-                the masks will be binarized. Binary masks are extensively used
-                in this project, so this argument is mandatory.
+            binary_threshold (float): the threshold with the masks will be 
+                binarized. Binary masks are extensively used in this project, 
+                so this argument is mandatory.
         """
-
         self.box_group = BoxGroup(boxes)
         self.mask_group = MaskGroup(masks, binary_threshold)
         self.scores = scores
@@ -50,9 +52,11 @@ class DetectionGroup:
         self
     ) -> bool:
         """
-        Returns True if there is no detection in this group.
-        """
+        Check if the detection group is empty.
 
+        Returns:
+            bool: True if the detection group is empty, False otherwise.
+        """
         return len(self.mask_group.data) == 0
 
     def metric_filtering(
@@ -67,15 +71,14 @@ class DetectionGroup:
         It discards the masks, boxes and scores considered worst.
 
         Args:
-            type: a string containing the type of metric that will be used to 
-                filter the group. It can be 'score' or 'percentage'. The first
-                one will filter the group by an arbitrary score threshold value.
-                The second will filter the group to remain only the best provided
-                percentage of masks.
-            score_threshold: a float value at interval [0, 1]. Masks with scores
-                below this threshold are deleted.
-            percentage: a float value at interval [0, 1]. It determines the
-                percentage of best masks that are desired.
+            type (str): the type of metric that will be used to filter the group. 
+                It can be 'score' or 'percentage'. The first one will filter the
+                group by an arbitrary score threshold value. The second will filter
+                the group to remain only the best provided percentage of masks.
+            score_threshold (float, optional): threshold value at interval [0, 1]. 
+                Masks with scores below this threshold are deleted.
+            percentage (float, optional): threshold value at interval [0, 1].
+                It determines the percentage of best masks that are desired.
         """
         if type == 'score':
             idxs = np.where(self.scores < score_threshold)[0]
@@ -98,21 +101,24 @@ class DetectionGroup:
         Filter the detections that represents the same crop.
 
         The filtering follows these steps:
-            1. Finds the appropriate curves to describe each mask. 
-            For more information about how the curves are obtained,
-            please refer to the features2d.Mask.extract_curves method 
-            documentation.
-            2. Finds the X coordinate where the obtained line intercepts
-            the bottom part of the image.
-            3. Applies a threshold on the distance between consecutive X
-            coordinates. Masks that have this coordinate too close are
-            merged and their curves are calculated again. 
 
-        #TODO: Throw an exception when no detections are informed.
+        1. Finds the appropriate curves to describe each mask. 
+        For more information about how the curves are obtained,
+        please refer to the features2d.Mask.extract_curves method 
+        documentation.
+
+        2. Finds the X coordinate where the obtained line intercepts
+        the bottom part of the image.
+
+        3. Applies a threshold on the distance between consecutive X
+        coordinates. Masks that have this coordinate too close are
+        merged and their curves are calculated again. 
+
+        TODO: Throw an exception when no detections are informed.
 
         Args:
-            x_coordinate_threshold: a float containing the threshold to
-                be applied to the distances between lines' X coordinates.
+            x_coordinate_threshold (float): the threshold to be applied to
+                the distances between lines' X coordinates.
         """
 
         if self.scores.any():
