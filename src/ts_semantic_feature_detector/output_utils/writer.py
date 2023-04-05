@@ -125,7 +125,3 @@ class OutputWriter:
             for key in timer.measurements.keys():
                 f.write(f'{str(timer.measurements[key][-1])}{self.separator}')
             f.write('\n')
-
-            for key in timer.measurements.keys():
-                meas = np.array(timer.measurements[key])
-                f.write(f'{str(np.average(meas))}{self.separator}')
