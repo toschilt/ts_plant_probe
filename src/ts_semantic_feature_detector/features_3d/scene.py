@@ -1,5 +1,7 @@
 """
+Encapsules a agricultural scene with 3D crops and ground plane.
 """
+
 from typing import List, Tuple
 
 import numpy as np
@@ -16,16 +18,15 @@ class AgriculturalScene:
     obtained from a RGB and a depth images.
 
     Attributes:
-        crop_group: a features_3d.crop.CornCropGroup object. It encapsules
-            the information about all the crops in a single scene.
-        ground_plane: the features_3d.ground_plane.GroundPlane object.
-            It contains all the ground plane features.
-        extrinsics: a Numpy array containing the extrinsics matrix.
-            It can be applied to all agricultural scene components. If it
-            is not informed, the add_extrinsics_information function must
-            be called.
-        age: a integer indicating the age of the scene. It is used to
-            remove old scenes from the sequence.
+        crop_group (:obj:`features_3d.crop.CornCropGroup`): object that 
+            encapsules the information about all the crops in a single scene.
+        ground_plane (:obj:`features_3d.ground_plane.GroundPlane`): the object
+            that contains all the ground plane features.
+        extrinsics (:obj:`np.ndarray`): the extrinsics matrix. It can be 
+            applied to all agricultural scene components. If it is not informed,
+            the add_extrinsics_information function must be called.
+        age (int): the age of the scene. It is used to remove old scenes from 
+            the sequence.
     """
 
     def __init__(
@@ -43,21 +44,21 @@ class AgriculturalScene:
         self,
         vector_3d: npt.ArrayLike,
         extrinsics: npt.ArrayLike
-    ):
+    ) -> npt.ArrayLike:
         """
         Applies the extrinsics matrix to a 3D vector.
 
         Args:
-            vector_3d: a Numpy array (3x1) containing the 3D vector. It
-                will be transformed in homogeneous coordinate to apply
-                the extrinsics.
-            extrinsics: a Numpy array (4x4) with the extrinsics matrix.
-                It describes the transformation from the camera frame to
+            vector_3d (:obj:`np.ndarray`): the 3D vector. It will be 
+                transformed in homogeneous coordinate to apply the 
+                extrinsics.
+            extrinsics (:obj:`np.ndarray`): the extrinsics matrix. It
+                describes the transformation from the camera frame to
                 a global frame.
 
         Returns:
-            a Numpy array (3x1) containing the 3D vector in Euclidian
-            coordinates.
+            euclidian_vector (:obj:`np.ndarray`): the 3D vector in the
+                Euclidian coordinates.
         """
         ext_hom_3d = extrinsics @ np.append(vector_3d, 1)
         return ext_hom_3d[:-1]/ext_hom_3d[-1]
@@ -66,7 +67,21 @@ class AgriculturalScene:
         self,
         translation: List,
         rotation: List
-    ):
+    ) -> npt.ArrayLike:
+        """
+        Gets the transformation matrix from translation and rotation values.
+
+        Args:
+            translation (:obj:`list`): a list containing three floats
+                describing the desired translation in the x, y and z axis.
+            rotation (:obj:`list`): a list containing four floats describing
+                the quaternion rotation.
+
+        Returns:
+            transformation_matrix (:obj:`np.ndarray`): the transformation
+                matrix in homogeneous coordinates.
+        """
+
         R_yaw = np.array(
             [[np.cos(rotation[2]), -np.sin(rotation[2]), 0],
             [np.sin(rotation[2]), np.cos(rotation[2]), 0],
@@ -89,22 +104,30 @@ class AgriculturalScene:
         orient_world_body: List,
         pos_camera_body: List,
         orient_camera_body: List
-    ):
+    ) -> None:
         """
         Adds extrinsics information to the scene.
         
         Updates the crops and ground plane 3D points and their's describing
         features (average points and vectors).
 
-        Args:
-            translation: a tuple containing three floats describing the
-                desired translation in the x, y and z axis, respectively.
-            rotation: a tuple containing three floats describing the 
-                desired yaw, pitch and roll rotations.
-
-        #TODO: crop and ground plane calculation are done before and after
+        TODO: crop and ground plane calculation are done before and after
             adding extrinsics. Refactor constructors to spare computational
             power.
+
+        Args:
+            pos_world_body (:obj:`list`): a list containing three floats
+                describing translation in the x, y and z axis from the world
+                frame to the body frame.
+            orient_world_body (:obj:`list`): a list containing four floats
+                describing the quaternion rotation from the world frame to
+                the body frame.
+            pos_camera_body (:obj:`list`): a list containing three floats
+                describing translation in the x, y and z axis from the camera
+                frame to the body frame.
+            orient_camera_body (:obj:`list`): a list containing four floats
+                describing the quaternion rotation from the camera frame to
+                the body frame.
         """
         if self.extrinsics is None:
             # Transformation between world and body frame (EKF)
@@ -168,25 +191,27 @@ class AgriculturalScene:
         Plot the agricultural scene using the Plotly library.
 
         Args:
-            data_plot: a list containing all the previous plotted
-                objects. If it is not informed, a empty list is
-                created and data is appended to it.
-            line_scalars: a Numpy array containing the desired scalars
+            data_plot (:obj:`list`, optional): the previous plotted
+                objects. If it is not informed, a empty list is created
+                and data is appended to it.
+            line_scalars (:obj:`np.ndarray`, optional): the desired scalars
                 to plot the crop line. If it is not informed, the line
                 is not plotted.
-            plane_scalars: a tuple containing two Numpy arrays
-                with scalars to plot the plan. The first Numpy array
-                must contain scalars for X coordinates and the second
-                must contain scalars for Z coordinates. If it is not
-                provided, the plan is not plotted.
-            plot_3d_points_crop: a boolean that indicates if the crop 3D
+            plane_scalars (a tuple [:obj:`np.ndarray`, :obj:`np.ndarray`], optional):
+                The first Numpy array must contain scalars for X coordinates 
+                and the second must contain scalars for Z coordinates. If it
+                is not provided, the plan is not plotted.
+            plot_3d_points_crop (bool, optional): indicates if the crop 3D pointclouds
+                needs to be plotted.
+            plot_3d_points_plane (bool, optional): indicates if the ground plane 3D
                 pointclouds needs to be plotted.
-            plot_3d_points_plane: a boolean that indicates if the ground
-                plane 3D pointclouds needs to be plotted.
-            plot_emerging_point: a boolean that indicates if the crop
-                3D emerging point needs to be plotted.
-            cluster_blacklist: a list containing the clusters that must be
-                ignored.
+            plot_emerging_point (bool, optional): indicates if the crop 3D emerging 
+                point needs to be plotted.
+            cluster_blacklist (:obj:`list`, optional): a list containing the
+                clusters that must be ignored.
+
+        Returns:
+            :obj:`list`: the plotted objects.
         """
 
         data = []

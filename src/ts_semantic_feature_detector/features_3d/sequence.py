@@ -1,4 +1,5 @@
 """
+Encapsules several agricultural scenes through time.
 """
 
 from typing import List, Tuple
@@ -15,8 +16,8 @@ class AgriculturalSequence:
     Abstracts a agriculture sequence.
 
     Attributes:
-        scenes: a list of features_3d.scene.AgriculturalScene objects
-            containing all the information from each scene in the
+        scenes (:obj:`list`): a list of :obj:`features_3d.scene.AgriculturalScene` 
+            objects containing all the information from each scene in the
             sequence.
     """
 
@@ -28,9 +29,9 @@ class AgriculturalSequence:
         Initializes the agricultural sequence.
 
         Args:
-            scenes: a list of features_3d.scene.AgriculturalScene objects
-            containing all the information from each scene in the
-            sequence. If it is None, a empty list is initialzed.
+            scenes (:obj:`list`): a list of :obj:`features_3d.scene.AgriculturalScene`
+                objects containing all the information from each scene in the sequence.
+                If it is None, a empty list is initialzed.
         """
     
         self.scenes = []
@@ -40,13 +41,13 @@ class AgriculturalSequence:
     def add_scene(
         self,
         scene: AgriculturalScene,
-    ):
+    ) -> None:
         """
         Adds a scene to this sequence.
 
         Args:
-            scene: a features_3d.scene.AgriculturalScene object to be
-                added.
+            scene (:obj:`features_3d.scene.AgriculturalScene`): a scene object
+                to be added.
         """
         for old_scene in self.scenes:
             old_scene.age += 1
@@ -61,10 +62,17 @@ class AgriculturalSequence:
         """
         Fits a unsupervised model to crop data to try to approximate stems.
 
-        #TODO: Save computational power by saving the last seen scene index.
+        TODO: Save computational power by saving the last seen scene index.
+
+        Args:
+            eps (float, optional): the maximum distance between two samples for 
+                one to be considered as in the neighborhood of the other.
+            min_samples (int, optional): the number of samples (or total weight) 
+                in a neighborhood for a point to be considered as a core point.
+                This includes the point itself.
 
         Returns:
-            a list containing the labels of the analysed crops.
+            crop_labels (:obj:`list`): containing the labels of the analysed crops.
         """
 
         descriptors = []
@@ -93,12 +101,12 @@ class AgriculturalSequence:
     def remove_old_scenes(
         self,
         max_age: int = 200
-    ):
+    ) -> None:
         """
         Removes old scenes from the sequence.
 
         Args:
-            max_age: the maximum age of a scene to be removed.
+            max_age (int, optional): the maximum age of a scene to be removed.
         """
         self.scenes = [scene for scene in self.scenes if scene.age < max_age]
 
@@ -111,30 +119,33 @@ class AgriculturalSequence:
         plot_3d_points_plane: bool = False,
         plot_emerging_points: bool = False,
         cluster_threshold: int = 3
-    ):
+    ) -> List:
         """
         Plot the agricultural sequence using the Plotly library.
 
         Args:
-            data_plot: a list containing all the previous plotted
-                objects. If it is not informed, a empty list is
-                created and data is appended to it.
-            line_scalars: a Numpy array containing the desired scalars
+            data_plot (:obj:`list`, optional): a list containing all
+                the previous plotted objects. If it is not informed,
+                a empty list is created and data is appended to it.
+            line_scalars: (:obj:`np.ndarray`, optional) the desired scalars
                 to plot the crop line. If it is not informed, the line
                 is not plotted.
-            plane_scalars: a tuple containing two Numpy arrays
-                with scalars to plot the plan. The first Numpy array
+            plane_scalars: (tuple of [np.ndarray, np.ndarray], optional):
+                the scalars to plot the plan. The first tuple array
                 must contain scalars for X coordinates and the second
                 must contain scalars for Z coordinates. If it is not
                 provided, the plan is not plotted.
-            plot_3d_points_crop: a boolean that indicates if the crop 3D
+            plot_3d_points_crop (bool, optional): indicates if the crop 3D
                 pointclouds needs to be plotted.
-            plot_3d_points_plane: a boolean that indicates if the ground
+            plot_3d_points_plane (bool, optional): indicates if the ground
                 plane 3D pointclouds needs to be plotted.
-            plot_emerging_point: a boolean that indicates if the crop
+            plot_emerging_point (bool, optional): indicates if the crop
                 3D emerging point needs to be plotted.
-            cluster_threshold: a integer that indicates how many occurences
+            cluster_threshold (int, optional): indicates how many occurences
                 a cluster must have to be printed.
+
+        Returns:
+            data_plot (:obj:`list`): a list containing all the plotted objects.
         """
 
         data = []
@@ -161,3 +172,5 @@ class AgriculturalSequence:
                 plot_emerging_points,
                 cluster_blacklist
             )
+
+        return data

@@ -1,16 +1,17 @@
 """
+This module contains the GroundPlane class that is used to find the ground
 """
+
 from functools import partial
 from typing import Dict, List, Tuple
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from PIL import Image
 import plotly.graph_objects as go
 from sklearn.decomposition import PCA
-
-import matplotlib.pyplot as plt
 
 from ts_semantic_feature_detector.features_3d.camera import StereoCamera
 
@@ -19,14 +20,14 @@ class GroundPlane:
     Abstraction of a 3D agricultural corn ground plane.
 
     Attributes:
-        rgb_img: a PIL Image object containing the scene RGB image.
-        hsv_img: a Numpy array object containing the scene HSV image.
-        binary_mask: a Numpy array containing the binary mask.
-        ground_vectors: a Numpy array containing two vectors that describes
+        rgb_img (PIL.Image): the scene RGB image.
+        hsv_img (:obj:`np.ndarray`): the scene HSV image.
+        binary_mask (:obj:`np.ndarray`): the binary mask.
+        ground_vectors (:obj:`np.ndarray`): two vectors that describes
             the ground plane.
-        normal_vector: a Numpy array containing the normal vector of the
+        normal_vector (:obj:`np.ndarray`): the normal vector of the
             ground plane.
-        coeficients: a Numpy array containing the plane equation coeficients.
+        coeficients (:obj:`np.ndarray`): the plane equation coeficients.
             The equation used is ax + by + cz + d = 0.
     """
 
@@ -37,29 +38,29 @@ class GroundPlane:
         camera: StereoCamera,
         depth_img: Image.Image,
         threshold_values: Dict = None,
-    ) -> None:
+    ):
         """
         Initializes the ground plane abstraction.
 
-        #TODO: Add more documentation about the threshold_values dictionary.
-        #TODO: Implement 'ngrdi' method.
-        #TODO: refactor this to share some 3D methods with CornCrop
+        TODO: Add more documentation about the threshold_values dictionary.
+        TODO: refactor this to share some 3D methods with CornCrop
 
         Args:
-            rgb_img: a PIL Image object containing the scene RGB image.
-            finding_ground_method: a string containing the type of ground
-                finding method that will be used. The possible methods are:
-                1. 'threshold_gaussian': converts the RGB to the HSV color
-                    space and applies a Gaussian filter and color thresholds
-                    to find the ground. 
+            rgb_img (PIL.Image): the scene RGB image.
+            finding_ground_method (str): the type of ground finding method 
+                that will be used. The possible methods are:
+
+                1. 'threshold_gaussian': converts the RGB to the HSV color 
+                space and applies a Gaussian filter and color thresholds
+                to find the ground. 
+
                 2. 'ngrdi': uses the NGRDI vegetation index to find the
-                    ground.
-            camera: the features_3d.camera.StereoCamera object. It
-                contains all the stereo camera information to obtain
-                the 3D crop.
-            depth_img: the PIL Image object containing the depth img
-                from the whole scene. It will be masked in this method.
-            threshold_values: a dictionary containing threshold values if 
+                ground.
+            camera (features_3d.camera.StereoCamera): the object contains all 
+                the stereo camera information to obtain the 3D crop.
+            depth_img (PIL.Image): the depth img from the whole scene. It will 
+                be masked in this method.
+            threshold_values (:obj:`dict` [str, float]]): the threshold values if 
                 the choosen method is 'threshold_gaussian'. If it is not
                 provided, default values are used. For more reference,
                 please refer to source.
@@ -133,11 +134,11 @@ class GroundPlane:
         The plane equation considered is ax + by + cz + d = 0.
 
         Args:
-            normal_vector: a Numpy array containing the ground plane normal vector
-            point: a Numpy array containing a point of the ground plane.
+            normal_vector (:obj:`np.ndarray`): the ground plane normal vector
+            point (:obj:`np.ndarray`): a point of the ground plane.
 
         Returns:
-            a list containing the plane coefficients a, b, c, d in this order.
+            coefs (:obj:`list`): the plane coefficients in the order: a, b, c, d.
         """
         return [normal_vector[0],
                 normal_vector[1],
@@ -147,13 +148,17 @@ class GroundPlane:
     def get_ngrdi_mask(
         self,
         rgb_img: npt.ArrayLike    
-    ):
+    ) -> npt.ArrayLike:
         """
         Applies the 'ngrdi' method to find the ground mask.
 
         Args:
-            rgb_img: a Numpy array containing the scene image in
-                the RGB color space.
+            rgb_img (:obj:`np.ndarray`): the scene image in the RGB 
+                color space.
+
+        Returns:
+            mask (:obj:`np.ndarray`): the image with the calculated 
+                NGRDI metric.
         """
 
         red_channel = rgb_img[:, :, 0]
@@ -165,17 +170,20 @@ class GroundPlane:
         self,
         hsv_img: npt.ArrayLike,
         threshold_values: Dict
-    ):
+    ) -> npt.ArrayLike:
         """
         Applies the 'threshold_gaussian' method to find the ground mask.
 
         Args:
-            hsv_img: a Numpy array containing the scene image in 
-                the HSV color space.
-            threshold_values: a dictionary containing threshold values if 
+            hsv_img (:obj:`np.ndarray`): the scene image in the HSV
+                color space.
+            threshold_values (:obj:`dict` [str, float]]): the threshold values if 
                 the choosen method is 'threshold_gaussian'. If it is not
                 provided, default values are used. For more reference,
                 please refer to source.
+
+        Returns:
+            mask (:obj:`np.ndarray`): the mask with the ground pixels.
         """
         gaussian_filter = (
             2*threshold_values['gaussian_filter'] + 1,
@@ -207,17 +215,20 @@ class GroundPlane:
     def _parameter_trackbars_callback(
         self,
         name: str,
-        val: int):
+        val: int
+    ) -> None:
         """
         Callback function to tune color threshold filter size.
 
         Args:
-            name: a string containing the parameter's name
-            val: a integer value containing the parameter's value
+            name (str): the parameter's name.
+            val (int): the parameter's value.
         """
         self.threshold_values[name] = val
 
-    def tune_values_tool(self):
+    def tune_values_tool(
+        self
+    ) -> None:
         """
         Implements a tool to tune values for ground plane finding.
 
@@ -256,12 +267,15 @@ class GroundPlane:
     def _get_principal_components(
         self,
         data_3d: npt.ArrayLike
-    ):
+    ) -> npt.ArrayLike:
         """
         Get the two principal component vector from crop 3D points.
 
         Args:
-            data_3d: the crop's 3D points.
+            data_3d (:obj:`np.ndarray`): the crop's 3D points.
+
+        Returns:
+            components (:obj:`np.ndarray`): the two principal components.
         """
         X = data_3d.reshape(-1, 3)
         pca = PCA(n_components=2)
@@ -278,11 +292,13 @@ class GroundPlane:
         Evaluate plane Y coordinates at desired X and Z coordinates.
 
         Args:
-            x: a Numpy array containing the desired X coordinates.
-            z: a Numpy array containing the desired Z coordinates.
+            x (:obj:`np.ndarray`): the desired X coordinates.
+            z (:obj:`np.ndarray`): the desired Z coordinates.
 
         Returns:
-            three Numpy arrays containing the X, Y and Z coordinates.
+            x (:obj:`np.ndarray`): x coordinates.
+            y (:obj:`np.ndarray`): y coordinates.
+            z (:obj:`np.ndarray`): z coordinates.
         """
         x, z = np.meshgrid(x, z)
         y = -(+ self.coeficients[0]*x
@@ -295,21 +311,24 @@ class GroundPlane:
         data_plot: List = None,
         plot_3d_points: bool = False,
         plot_plan_scalars: Tuple[npt.ArrayLike, npt.ArrayLike] = None
-    ):
+    ) -> List:
         """
         Plot the corn crop using Plotly library.
 
         Args:
-            data_plot: a list containing all the previous plotted
-                objects. If it is not informed, a empty list is
-                created and data is appended to it.
-            plot_3d_points: a boolean that indicates if the ground plane
-                3D pointcloud needs to be plotted.
-            plot_plan_scalars: a tuple containing two Numpy arrays
-                with scalars to plot the plan. The first Numpy array
-                must contain scalars for X coordinates and the second
-                must contain scalars for Z coordinates. If it is not
-                provided, the plan is not plotted.
+            data_plot (:obj:`list`, optional): the previous plotted objects. 
+                If it is not informed, a empty list is created and data
+                is appended to it.
+            plot_3d_points (bool, optional): a boolean that indicates if 
+                the ground plane 3D pointcloud needs to be plotted.
+            plot_plan_scalars (a tuple [:obj:`np.ndarray`, :obj:`np.ndarray`], optional):
+                two Numpy arrays with scalars to plot the plan. The first Numpy 
+                array must contain scalars for X coordinates and the second must
+                contain scalars for Z coordinates. If it is not provided, the 
+                plan is not plotted.
+
+        Returns:
+            data (:obj:`list`): the list of plotted objects.
         """
         data = []
         if data_plot is not None:

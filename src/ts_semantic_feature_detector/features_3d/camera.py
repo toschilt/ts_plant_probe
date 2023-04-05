@@ -1,4 +1,5 @@
 """
+Module that implements stereo camera related classes and methods.
 """
 
 from typing import Tuple
@@ -12,27 +13,24 @@ class StereoCamera:
     Abstracts some properties and methods related to the StereoCamera.
 
     Attributes:
-        intrinsics_matrix - a 3x3 Numpy array containing the instrinsics 
-            matrix values (fx, fy, cx, cy).
-        intrinsics_matrix_inv - a 3x3 Numpy array containing the inverse
-            intrinsics matrix.
-        size - a tuple containing the image size (width, height)
+        intrinsics_matrix (np.ndarray): the instrinsics matrix values (fx, fy, cx, cy).
+        intrinsics_matrix_inv (np.ndarray): the inverse intrinsics matrix.
+        size (a tuple (int, int)): containing the image size (width, height)
     """
 
     def __init__(
         self,
-        intrinsics: Tuple[int, int, int, int],
+        intrinsics: Tuple[float, float, float, float],
         size: Tuple[int, int]
-    ) -> None:
+    ):
         """
         Initializes the stereo camera.
 
         Args:
-            intrinsecs - a tuple containing the four stereo camera
-                intrinsics values ([fx, fy, cx, cy]).
-            size - a tuple containing the image size (width, height)
+            intrinsecs (a tuple [float, float, float, float]): the four stereo 
+                camera intrinsics values ([fx, fy, cx, cy]).
+            size (tuple [int, int]): the image size (width, height)
         """
-
         self.intrinsics_matrix = np.array(
             [[intrinsics[0], 0, intrinsics[2]],
              [0, intrinsics[1], intrinsics[3]],
@@ -44,7 +42,7 @@ class StereoCamera:
         self,
         p_2d: npt.ArrayLike,
         depth: float,
-    ):
+    ) -> npt.ArrayLike:
         """
         Gets the 3D points in the camera reference frame.
 
@@ -55,15 +53,16 @@ class StereoCamera:
         The scalar z makes the operation correct.
 
         Args:
-            p_2d: the 2D point in homogeneous coordinates ([x, y, 1]).
-            depth: the depth information related to the 2D point.
+            p_2d (:obj:`np.ndarray`): the 2D point in homogeneous coordinates 
+                ([x, y, 1]).
+            depth (float): the depth information related to the 2D point.
         """
         return depth*(self.intrinsics_matrix_inv @ p_2d)
 
     def get_2d_point(
         self,
         p_3d: npt.ArrayLike
-    ):
+    ) -> npt.ArrayLike:
         """
         Gets the 2D point in the image reference frame.
 
@@ -77,7 +76,8 @@ class StereoCamera:
         equivalently assumed to be 1 as the equation above shows.
 
         Args:
-            p_3d: the 3D point in homogeneous coordinates ([x, y, z, w]).
+            p_3d (:obj:`np.ndarray`): the 3D point in homogeneous coordinates
+                ([x, y, z, w]).
         """
 
         intrinsics = np.append(self.intrinsics_matrix, [[0], [0], [0]], axis=1)
@@ -94,10 +94,9 @@ class StereoCamera:
         Has the purpose of avoiding explicit loading in main programs.
 
         Args:
-            image_path: a string containing the path to the
-                image.
+            image_path (str): the path to the image.
         
         Returns:
-            a Numpy array containing the data from hte image.
+            data (:obj:`np.ndarray`): the data from the image.
         """
         return np.array(Image.open(image_path))
