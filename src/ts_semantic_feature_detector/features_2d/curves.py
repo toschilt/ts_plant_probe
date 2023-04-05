@@ -3,6 +3,7 @@ Implements basic operations for 2D curves.
 
 The curves are used to filter redundant masks. 
 """
+
 from typing import Union
 
 import matplotlib.pyplot as plt
