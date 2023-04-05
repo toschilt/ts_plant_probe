@@ -1,4 +1,8 @@
 """
+Implements basic operations for bounding boxes.
+
+It is usefeul to visualize the results of the Mask RCNN network and to
+have a class representation in the same way as the masks.
 """
 
 import matplotlib.patches as patches
@@ -12,7 +16,7 @@ class Box:
     Implements methods to process boxes and visualize data.
 
     Attributes:
-        data - a Numpy array containing the box data with shape (1, 4)
+        data (:obj:`np.ndarray`): the box data with shape (1, 4)
     """
 
     def __init__(
@@ -23,7 +27,7 @@ class Box:
         Initialize a single box.
 
         Args:
-            box - a Numpy array containing the box data with shape (1, 4)
+            box (:obj:`np.ndarray`): the box data with shape (1, 4)
         """
         self.data = box
 
@@ -31,17 +35,16 @@ class Box:
         self,
         ax: plt.Axes,
         color: str,
-        linewidth = 3
-    ):
+        linewidth = 3.0
+    ) -> None:
         """
         Plot a single box using the Matplotlib library.
 
         Args:
-            ax - a matplotlib.pyplot.Axes object containing the subplot where
-                it's desired to insert the box.
-            color - a string containing the desired hexadecimal color for the
-                plot.
-            linewidth - a float number indicating the box's line width.
+            ax (:obj:`matplotlib.pyplot.Axes`): the subplot where it's desired to 
+                insert the box.
+            color (str): the desired hexadecimal color for the plot.
+            linewidth (float, optional): the box's line width.
         """
 
         ax.add_patch(
@@ -66,9 +69,8 @@ class BoxGroup:
     For more information, see ts_semantic_feature_detector.features_2d.masks
     
     Attributes:
-        data - a list containing all the masks as features_2d.boxes.Box
-            objects. 
-        scores - a Numpy array containing the boxes' inference scores.
+        data (:obj:`list`): the masks as features_2d.boxes.Box objects. 
+        scores (:obj:`np.ndarray`): the boxes' inference scores.
     """
 
     def __init__(
@@ -79,9 +81,8 @@ class BoxGroup:
         Initializes the group of boxes.
 
         Args:
-            boxes - a Numpy array containing the masks with shape
-                (num_boxes, 4). This is the same format outputted 
-                by the Mask RCNN network.
+            boxes (:obj:`np.ndarray`): the masks with shape (num_boxes, 4). 
+                This is the same format outputted by the Mask RCNN network.
         """
 
         self.data = []
@@ -92,17 +93,16 @@ class BoxGroup:
         self,
         ax: plt.Axes,
         color: str,
-        linewidth = 3
-    ):
+        linewidth: float = 3.0
+    ) -> None:
         """
         Plot the box group using the Matplotlib library.
 
         Args:
-            ax - a matplotlib.pyplot.Axes object containing the subplot where
-                it's desired to insert the box.
-            color - a string containing the desired hexadecimal color for the
-                plot.
-            linewidth - a float number indicating the box's line width.
+            ax (:obj:`matplotlib.pyplot.Axes`): the subplot where it's desired to 
+                insert the box.
+            color (str): containing the desired hexadecimal color for the plot.
+            linewidth (float, optional): the box's line width.
         """
 
         for box in self.data:
