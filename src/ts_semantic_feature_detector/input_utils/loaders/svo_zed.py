@@ -1,4 +1,5 @@
 """
+This module implements a class to load decompressed SVO files.
 """
 
 import os
@@ -15,11 +16,11 @@ class SVOZedLoader:
     It loads RGB and depth images.
 
     Attributes:
-        rgb_imgs: a list containing the sorted names of the RGB images.
-        rgb_times: a Numpy array containing the float timestamps for each
+        rgb_imgs (:obj:`list`): the sorted names of the RGB images.
+        rgb_times (:obj:`np.ndarray`): the float timestamps for each
             RGB image.
-        depth_imgs: a list containing the sorted names of the depth images.
-        depth_times: a Numpy array containing the float timestamps for each
+        depth_imgs (:obj:`list`): the sorted names of the depth images.
+        depth_times (:obj:`np.ndarray`): the float timestamps for each
             depth image.
     """
 
@@ -33,9 +34,9 @@ class SVOZedLoader:
         Gets the images list and their timestamps.
         
         Args:
-            data_path: a string containing the path to the the upper folder 
-                where the compressed and the extracted data are storaged. It
-                is expected a folder arrangement similar to:
+            data_path (str): the path to the the upper folder where the 
+                compressed and the extracted data are storaged. It is 
+                expected a folder arrangement similar to:
 
                 /data
                     /rosbag
@@ -72,11 +73,11 @@ class SVOZedLoader:
         the timestamp.
 
         Args:
-            image_filenames: a list containing the images filenames.
+            image_filenames (:obj:`list`): contains the images filenames.
 
         Returns:
-            a Numpy array containing the timestamp for each image storaged 
-            in float format.
+            times (:obj:`np.ndarray`): the timestamp for each image storaged 
+                in float format.
         """
         times = []
         for img in image_filenames:

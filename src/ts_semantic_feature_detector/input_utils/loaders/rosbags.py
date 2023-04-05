@@ -1,5 +1,8 @@
 """
+This module implements a class to load decompressed rosbags.
 """
+
+from typing import Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -11,12 +14,12 @@ class RosbagLoader:
     It loads EKF and IMU data.
 
     Attributes:
-        ekf: a Numpy array containing the EKF data (timestamp, position 
+        ekf (:obj:`np.ndarray`): the EKF data (timestamp, position 
             and orientation).
-        ekf_times: a Numpy array containing the float timestamps for each
+        ekf_times (:obj:`np.ndarray`): the float timestamps for each
             EKF entry.
-        imu: a Numpy array containing the IMU data (timestamp and orientation).
-        imu_times: a Numpy array containing the float timestamps for each
+        imu (:obj:`np.ndarray`): the IMU data (timestamp and orientation).
+        imu_times (:obj:`np.ndarray`): the float timestamps for each
             IMU entry.
     """
 
@@ -28,8 +31,8 @@ class RosbagLoader:
         Initializes the rosbag loader.
 
         Args:
-            data_path: a string containing the path to the the upper folder 
-                where the compressed and the extracted data are storaged. It
+            data_path (str): the path to the the upper folder where the 
+                compressed and the extracted data are storaged. It
                 is expected a folder arrangement similar to:
 
                 /data
@@ -55,7 +58,7 @@ class RosbagLoader:
     def _get_csv_and_times(
         self,
         csv_path: str,
-    ) -> npt.ArrayLike:
+    ) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
         """
         Loads a CSV file and constructs the float timestamp for each entry.
 
@@ -64,7 +67,11 @@ class RosbagLoader:
         first line of the file is used for data description (it's skipped).
 
         Args:
-            csv_path: a string containing the path to the CSV file.
+            csv_path (str): the path to the CSV file.
+
+        Returns:
+            data (:obj:`np.ndarray`): the data loaded from the CSV file.
+            times (:obj:`np.ndarray`): the float timestamps for each entry.
         """
 
         data = np.loadtxt(

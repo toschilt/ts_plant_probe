@@ -1,5 +1,7 @@
 """
+Module that implements rosbag and svo extracting functionalities.
 """
+
 import os
 
 from typing import Dict, List, Tuple
@@ -33,8 +35,8 @@ class DataExtractor():
         Initializes the data extractor.
 
         Args:
-            data_path: a string containing the path to the the upper folder 
-                where the compressed and the extracted data are storaged. It
+            data_path (str): the path to the the upper folder where
+                the compressed and the extracted data are storaged. It
                 is expected a folder arrangement similar to:
 
                 /data
@@ -42,8 +44,8 @@ class DataExtractor():
                         - .bag file
                     /svo
                         - .svo file
-            rosbag_file: a string containing the .bag file name.
-            svo_file: a string containing the .svo file name.
+            rosbag_file (str): the .bag file name.
+            svo_file (str): the .svo file name.
         """
         
         rosbag_topics, svo_topics = self._get_topics_names()
@@ -69,9 +71,10 @@ class DataExtractor():
         needs to be changed to add/remove ROS subscribers and callbacks.
 
         Returns:
-            a pair of dictionaries. The first one describes the topics
-            to be extracted from the rosbag and the second one describes
-            the topics to be extracted from the SVO file.
+            rosbag_topics (:obj:`dict` [str, np.ndarray]): the topics
+                to be extracted from the rosbag.
+            svo_topics (:obj:`dict` [str, np.ndarray]): the topics
+                to be extracted from the SVO file.
         """
         rosbag_topics = {
             'ekf': '/terrasentia/ekf',
@@ -94,16 +97,16 @@ class DataExtractor():
         bag: rosbag.Bag,
         topics: Dict,
         data_path: str
-    ):
+    ) -> None:
         """
         Writes all desired data to the data folder.
 
         Args:
-            bag: a rosbag.Bag object containing the data.
-            topics: a dictionary containing all the desired topics
+            bag (rosbag.Bag): an object containing the rosbag data.
+            topics (:obj:`dict` [str, str]): all the desired topics
                 published by the rosbag.
-            data_path: a string containing the path to the the upper folder 
-                where the compressed and the extracted data are storaged.
+            data_path (str): the path to the the upper folder where 
+                the compressed and the extracted data are storaged.
         """
         topics_list = []
         for topic in topics.values():
@@ -172,14 +175,14 @@ class DataExtractor():
     def _create_folder_if_needed(
         self,
         path: str
-    ):
+    ) -> None:
         """
         Creates a folder if it does not exist yet.
 
         Args:
-            path: a string containing the path to the desired folder.
+            path (str): the path to the desired folder.
 
-        #FIXME: permission problem when creating folders.
+        FIXME: permission problem when creating folders.
         """
         pass
         # if not os.path.exists(path):
@@ -197,13 +200,13 @@ class DataExtractor():
         It is intended to be changed manually if needed.
 
         Args:
-            topics: a dictionary containing all the desired topics
-                published by the SVO.
-            data_path: a string containing the path to the the upper folder 
-                where the compressed and the extracted data are storaged.
+            topics (:obj:`dict` [str, str]): all the desired topics
+                published by the SVO file.
+            data_path (str): the path to the the upper folder where 
+                the compressed and the extracted data are storaged.
                 
         Returns:
-            a list containing all the ROS subscribers.
+            subscribers (:obj:`list`): the ROS subscribers.
         """
 
         svo_subscribers = []
@@ -242,11 +245,19 @@ class DataExtractor():
 
         return svo_subscribers
 
-    def _svo_img_cb(self, msg, path):
+    def _svo_img_cb(
+        self,
+        msg: Image,
+        path: str
+    ):
         """
         Callback for SVO image messages. 
 
         It saves the images as PNG files with corresponding time stamps.
+
+        Args:
+            msg (sensor_msgs.msg.Image): the ROS Image message.
+            path (str): the path to the folder where the images will be saved.
         """
         secs = msg.header.stamp.secs
         nsecs = msg.header.stamp.nsecs
@@ -264,9 +275,9 @@ class DataExtractor():
         Writes all desired data to the data folder.
 
         Args:
-            svo_file: a string containing the name of the SVO file.
-            data_path: a string containing the path to the the upper folder 
-                where the compressed and the extracted data are storaged.
+            svo_file (str): the name of the SVO file.
+            data_path (str): the path to the the upper folder where the 
+                compressed and the extracted data are storaged.
 
         Returns:
             the roslaunch.parent.ROSLaunchParent object. It can be

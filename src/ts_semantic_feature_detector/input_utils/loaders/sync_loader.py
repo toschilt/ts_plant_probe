@@ -1,7 +1,8 @@
 """
+This implements a class to load and synchronize data from rosbags and SVO files.
 """
 
-from typing import Dict
+from typing import Dict, Generator
 
 import numpy as np
 from PIL import Image
@@ -14,13 +15,13 @@ class SynchronizedLoader:
     Implements loading and synchronizing data from rosbags and SVO files.
 
     Attributes:
-        data_path: a string containing the path to the the upper folder 
-            where the compressed and the extracted data are storaged.
-        data: a dictionary containing all the data from the extracted files.
+        data_path (str): the path to the the upper folder where the compressed
+            and the extracted data are storaged.
+        data (a dict [str, np.ndarray]): all the data from the extracted files.
             Images still need to be loaded.
-        times: a dictionary containing all the data timestamps from the
+        times (a dict [str, np.ndarray]): all the data timestamps from the
             extracted files.  
-        low_freq_topic: the topic with the least amount of data. It is used
+        low_freq_topic (str): the topic with the least amount of data. It is used
             to synchronize the others.
     """
 
@@ -32,9 +33,9 @@ class SynchronizedLoader:
         Initializes the loader.
 
         Args:
-            data_path: a string containing the path to the the upper folder 
-                where the compressed and the extracted data are storaged. It
-                is expected a folder arrangement similar to:
+            data_path (str): the path to the the upper folder where the compressed
+                and the extracted data are storaged. It is expected a folder arrangement
+                similar to:
 
                 /data
                     /rosbag
@@ -72,7 +73,7 @@ class SynchronizedLoader:
     def _get_low_freq_topic(
         self,
         times: Dict
-    ):
+    ) -> str:
         """
         Gets the low frequency topic from all sources.
 
@@ -81,8 +82,7 @@ class SynchronizedLoader:
         for synchronize the others.
 
         Args:
-            times: a dictionary containing Numpy arrays with the
-                timestamps of each topic.
+            times (a dict [str, np.ndarray]): the timestamps of each topic.
         """
 
         time_sizes = {}
@@ -94,13 +94,13 @@ class SynchronizedLoader:
     def get_sync_data(
         self,
         skip_frames: int = 0
-    ):
+    ) -> Generator:
         """
         Yields the rosbag and svo data synchronized.
 
         Args:
-            skip_frames: a integer containing the desired amount
-                of frames that will be skipped at the start.
+            skip_frames (int): the desired amount of frames that 
+                will be skipped at the start.
         """
         low_freq_times = self.times[self.low_freq_topic]
 

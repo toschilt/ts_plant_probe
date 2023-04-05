@@ -1,3 +1,7 @@
+"""
+Implements the Mask RCNN model to do stem mask segmentation.
+"""
+
 import os
 import json
 from typing import Union, Tuple, List, Dict, Any
@@ -29,19 +33,19 @@ class MaskRCNNStemSegmentationModel:
     only one class: the stems). It also implements a training and
     a inference methods to allow easy use.
 
-    #TODO: Remove TerraSentiaDataset object requirement to do inference.
+    TODO: Remove TerraSentiaDataset object requirement to do inference.
         Create another structure to encapsulate information about the images. 
-    #TODO: Add more explanation about train_log and validation_log dictionaries.
-    #TODO: Encapsule some of train method routines in private functions.
+    TODO: Add more explanation about train_log and validation_log dictionaries.
+    TODO: Encapsule some of train method routines in private functions.
     
     Attributes:
-        hyperparams: a dictionary containing the hyperparameters values. More
+        hyperparams (a dict [str, float]): the hyperparameters values. More
             description can be found at the constructor method documentation.
-        dataset: segmentation_model.ts_dataset.ts_load_dataset.TerraSentiaDataset
+        dataset (:obj:`segmentation_model.ts_dataset.ts_load_dataset.TerraSentiaDataset`): 
             The TerraSentiaDataset object. It contains all images path and
             do all the pre-processing needed. It also contains some information
             about the images, as original size, mean and standard deviation.
-        model: torchvision.models.detection.mask_rcnn.MaskRCNN
+        model (:obj:`torchvision.models.detection.mask_rcnn.MaskRCNN`):
             The Mask RCNN model customized to the stem segmentation task.
         optimizer: the SGD optimizer for training the model
         lr_scheduler: the LR Scheduler for training the model.
@@ -395,8 +399,7 @@ class MaskRCNNStemSegmentationModel:
         The result is filtered by project convenience, therefore some
         network outputs are inaccessible using this method.
 
-        #TODO: incorporate the same transformation object from
-            the dataset.
+        TODO: incorporate the same transformation object from the dataset.
 
         Args:
             inference_img: a Numpy array containing the image. If it is not

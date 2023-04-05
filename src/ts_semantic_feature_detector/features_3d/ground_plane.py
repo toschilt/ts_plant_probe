@@ -60,7 +60,7 @@ class GroundPlane:
                 the stereo camera information to obtain the 3D crop.
             depth_img (PIL.Image): the depth img from the whole scene. It will 
                 be masked in this method.
-            threshold_values (:obj:`dict` [str, float]]): the threshold values if 
+            threshold_values (:obj:`dict` [str, float]): the threshold values if 
                 the choosen method is 'threshold_gaussian'. If it is not
                 provided, default values are used. For more reference,
                 please refer to source.

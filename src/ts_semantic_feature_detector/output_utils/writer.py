@@ -1,5 +1,7 @@
 """
+Implements writing functionality to output data.
 """
+
 import os
 
 from typing import List
@@ -14,10 +16,9 @@ class OutputWriter:
     Compiles data from the perception algorithm to be outputted.
 
     Attributes:
-        odom_file: a string containing the path to the odometry data.
-        points_file: a string containing the path to the points data.
-        separator: a string containing the separator to be used in the
-            output files.
+        odom_file (str): the path to the odometry data.
+        points_file (str): the path to the points data.
+        separator (str): the separator to be used in the output files.
     """
 
     def __init__(
@@ -31,9 +32,9 @@ class OutputWriter:
         Initializes the compiler.
 
         Args:
-            odometry_file: a string containing the path to the odometry data.
-            points_file: a string containing the path to the points data.
-            separator: a string containing the separator to be used in the
+            odometry_file (str): the path to the odometry data.
+            points_file (str): the path to the points data.
+            separator (str, optional): the separator to be used in the 
                 output files.
         """
 
@@ -54,13 +55,13 @@ class OutputWriter:
         self,
         scene_id: int,
         ekf_data: List
-    ):
+    ) -> None:
         """
         Writes the robot pose to the odometry file.
 
         Args:
-            scene_id: an integer containing the scene id.
-            ekf_data: a list containing the robot pose.
+            scene_id (int): the scene id.
+            ekf_data (:obj:`list`): the robot pose.
         """
 
         with open(self.odom_file, 'a') as f:
@@ -79,13 +80,14 @@ class OutputWriter:
         self,
         scene_id: int,
         scene: AgriculturalScene,
-    ):
+    ) -> None:
         """
         Writes the emerging point to the points file.
 
         Args:
-            scene_id: an integer containing the scene id.
-            points: a numpy array containing the points.
+            scene_id (int): the scene id.
+            scene (:obj:`features_3d.scene.AgriculturalScene`): the scene
+                containing the emerging points.
         """
         for crop in scene.crop_group.crops:
             cluster = crop.cluster
@@ -105,12 +107,13 @@ class OutputWriter:
     def write_times(
         self,
         timer: Timer
-    ):
+    ) -> None:
         """
         Writes the times to the times file.
         
         Args:
-            timer: a Timer object containing the times.
+            timer (:obj:`perfomance.timer.Timer`): the timer object with the
+                time measurements.
         """
 
         if os.path.getsize(self.times_file) == 0:

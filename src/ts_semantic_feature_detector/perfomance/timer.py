@@ -1,4 +1,6 @@
 """
+Implementation of a timer class to measure the performance of the
+pipeline.
 """
 
 import time
@@ -8,13 +10,15 @@ class Timer:
     Timer class to measure each step of the pipeline
 
     Attributes:
-        measurements: a list of dictionaries containing the name of
-            the timer, the start time, the end time and the total
-            time of each timer.
-        start_times: a dictionary containing the start time of each
-            timer.
-        end_times: a dictionary containing the end time of each
-            timer.
+        measurements (a dict [str, List]): the measurements of each
+            timer. The key is the name of the timer and the value is a
+            list containing the measurements.
+        start_times: (a dict [str, List]): the start time of each
+            timer. The key is the name of the timer and the value is a
+            list containing the start time.
+        end_times: (a dict [str, List]): the end time of each
+            timer. The key is the name of the timer and the value is a
+            list containing the end time.
     """
 
     def __init__(
@@ -37,9 +41,8 @@ class Timer:
         Starts a timer with a given name
 
         Args:
-            name: a string containing the name of the timer
+            name (str): the name of the timer.
         """
-
         self.start_times[name] = time.time()
 
     def stop(
@@ -50,7 +53,7 @@ class Timer:
         Stops a timer with a given name and saves the measurement.
 
         Args:
-            name: a string containing the name of the timer
+            name (str): the name of the timer.
         """
 
         self.end_times[name] = time.time()
