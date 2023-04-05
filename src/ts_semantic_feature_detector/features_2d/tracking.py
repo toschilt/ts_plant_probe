@@ -1,5 +1,11 @@
 """
+Implements a tracker for corn crops using SORT algorithm.
+
+SORT is a simple, online and realtime tracking algorithm for 2D multiple
+object tracking in video sequences. It works with bounding boxes.
 """
+
+from typing import List, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -15,12 +21,14 @@ class KalmanBoxTracker():
     Implements a bounding box tracker with Kalman filter.
 
     Attributes:
-        crops - a list of features_3d.crop.CornCrop that this tracker
-            refers to.
+        crops (:obj:`list`): a list of :obj:`features_3d.crop.CornCrop`
+            that this tracker refers to.
     """
 
-    # Static attribute to give unique ID's to the trackers.
     count = 0
+    """
+    int: static attribute to give unique ID's to the trackers.
+    """
 
     def __init__(
         self,
@@ -29,10 +37,10 @@ class KalmanBoxTracker():
         """
         Initialize a box tracker.
 
-        #TODO: update documentation about the state and action vectors.
+        TODO: update documentation about the state and action vectors.
 
         Args:
-            crop: a features_3d.crop.CornCrop object containing
+            crop (:obj:`features_3d.crop.CornCrop`): the object containing
                 information about a single corn crop.
         """
         self.kf = KalmanFilter(dim_x=7, dim_z=6, dim_u=2)
@@ -102,7 +110,7 @@ class KalmanBoxTracker():
     def _convert_bbox_to_z(
         self,
         bbox: npt.ArrayLike
-    ):
+    ) -> npt.ArrayLike:
         """
         Converts a bounding box in format [x1, y1, x2, y2] into [x, y, s, r].
 
@@ -113,10 +121,10 @@ class KalmanBoxTracker():
         box area and r is bounding box size ratio.
 
         Args:
-            - bbox: a Numpy array containing the crop bounding box.
+            bbox: (:obj:`np.ndarray`): containing the crop bounding box.
 
         Returns:
-            a Numpy array containing the bouding box data converted.
+            converted_data (:obj:`np.ndarray`): the bouding box data converted.
         """
         w = bbox[2] - bbox[0]
         h = bbox[3] - bbox[1]
@@ -132,9 +140,9 @@ class KalmanBoxTracker():
     
     def _convert_x_to_bbox(
         self,
-        x,
-        score=None
-    ):
+        x: List,
+        score: float = None
+    ) -> npt.ArrayLike:
         """
         Converts a bounding box in format [x, y, s, r] into [x1, y1, x2, y2].
 
@@ -145,6 +153,11 @@ class KalmanBoxTracker():
         box area and r is bounding box size ratio.
 
         Args:
+            x (:obj:`list`): containing the bounding box data.
+            score (float, optional): containing the detection score.
+
+        Returns:
+            converted_data (:obj:`np.ndarray`): the bouding box data converted.
         """
         w = np.sqrt(x[2] * x[3])
         h = x[2] / w
@@ -156,13 +169,16 @@ class KalmanBoxTracker():
     def predict(
         self,
         motion_2d_offset: npt.ArrayLike
-    ):
+    ) -> npt.ArrayLike:
         """
         Executes the Kalman filter predict step.
 
         Args:
-            motion_2d_offset: a Numpy array containing the 2D motion offset
+            motion_2d_offset: a :obj:`np.ndarray` containing the 2D motion offset
                 calculated from the extrinsics information.
+
+        Returns:
+            prediction (:obj:`np.ndarray`): the predicted bounding box.
         """
 
         # Checks if the new predicted scale will be zero.
@@ -189,12 +205,12 @@ class KalmanBoxTracker():
     def update(
         self,
         detection: npt.ArrayLike
-    ):
+    ) -> None:
         """
         Executes the Kalman filter correction step.
 
         Args:
-            detection: a Numpy array containing the detected bounding box
+            detection (:obj:`np.ndarray`): the detected bounding box
                 in format [x1, y1, x2, y2].
         """
 
@@ -208,16 +224,28 @@ class KalmanBoxTracker():
         self
     ) -> npt.ArrayLike:
         """
-        Returns the current bounding box estimate.
+        Get the current bounding box estimate.
+
+        Returns:
+            state (:obj:`np.ndarray`): the current bounding box estimate.
         """
         return self._convert_x_to_bbox(self.kf.x)
 
 class AgricultureSort():
     """
-    Modified SORT: A Simple, Online and Realtime Tracker
+    Modified SORT: A Simple, Online and Realtime Tracker.
 
     Attributes:
-        
+        camera (features_3d.camera.StereoCamera): the camera object that
+            contains all the stereo camera information to project 3D points
+            back into the 2D plane.
+        max_age (int): the maximum number of frames to keep alive a track 
+            without associated detections.
+        min_hits (int): the minimum number of associated detections before
+            track is initialised.
+        iou_threshold (float): the minimum IOU for match.
+        trackers (:obj:`list`): a list of :obj:`AgricultureTracker` objects.
+        frame_count (int): the current frame number.
     """
     def __init__(
         self,
@@ -230,14 +258,14 @@ class AgricultureSort():
         Initialize the SORT object.
 
         Args:
-            camera: camera: the features_3d.camera.StereoCamera object. It
-                contains all the stereo camera information to project 3D
-                points back into the 2D plane.
-            max_age: an integer indicating the maximum number of frames to 
-                keep alive a track without associated detections.
-            min_hits: an integer indicating the minimum number of associated 
-                detections before track is initialised.
-            iou_threshold: a float indicating the minimum IOU for match.
+            camera (features_3d.camera.StereoCamera): the camera object that
+                contains all stereo camera information to project 3D points 
+                back into the 2D plane.
+            max_age (int, optional): the maximum number of frames to keep alive 
+                a track without associated detections.
+            min_hits (int, optional): the minimum number of associated detections
+                before track is initialised.
+            iou_threshold (float, optional): the minimum IOU for match.
         """
         self.camera = camera
         self.max_age = max_age
@@ -250,8 +278,16 @@ class AgricultureSort():
     def step(
         self,
         sequence: AgriculturalSequence
-    ):
+    ) -> npt.ArrayLike:
         """
+        Executes the tracker step.
+
+        Args:
+            sequence (:obj:`features_3d.agriculture.AgriculturalSequence`): the sequence
+                object that contains all the information about the scenes.
+
+        Returns:
+            tracked_bbox (:obj:`np.ndarray`): containing the tracked bounding boxes.
         """
 
         self.frame_count += 1
@@ -340,9 +376,21 @@ class AgricultureSort():
         else:
             return np.empty((0, 5))
     
-    def _iou_batch(self, bb_test, bb_gt):
+    def _iou_batch(
+        self,
+        bb_test: npt.ArrayLike,
+        bb_gt: npt.ArrayLike
+    ) -> npt.ArrayLike:
         """
-        Computes the IOU metric between two bounding boxes in the form [x1, y1, x2, y2]
+        Computes the IOU metric between two bounding boxes in the form [x1, y1, x2, y2].
+
+        Args:
+            bb_test (:obj:`np.ndarray`): the first bounding box.
+            bb_gt (:obj:`np.ndarray`): the second bounding box.
+
+        Returns:
+            iou_values (:obj:`np.ndarray`): containing the IOU metric from each 
+                tracker/detection pair.
         """
         bb_gt = np.expand_dims(bb_gt, 0)
         bb_test = np.expand_dims(bb_test, 1)
@@ -367,36 +415,36 @@ class AgricultureSort():
         Calculates the best detection/trackers correspondence.
         
         Args:
-            cost_matrix: a Numpy array containing negative IOU values for each
-                detection and tracker pair.
+            cost_matrix (:obj:`np.ndarray`) containing negative IOU values
+                for each detection and tracker pair.
 
         Returns:
-            a Numpy array where each line indicates a correspondance between
-                the first column (detection) and the second one (tracker)
+            matches (:obj:`np.ndarray`): each line indicates a correspondance 
+                between the first column (detection) and the second one (tracker).
         """
         x, y = linear_sum_assignment(cost_matrix)
         return np.array(list(zip(x, y)))
 
     def _associate_detections_to_trackers(
         self,
-        detections,
-        trackers_data,
-        iou_threshold
-    ):
+        detections: npt.ArrayLike,
+        trackers_data: npt.ArrayLike,
+        iou_threshold: float
+    ) -> Tuple[npt.ArrayLike, npt.ArrayLike, npt.ArrayLike]:
         """
         Associates the detections to the existing trackers.
 
         Args:
-            detections: a Numpy array containing the bounding boxes detected in
+            detections (:obj:`np.ndarray`): the bounding boxes detected in
                 the current frame.
-            trackers_data: a Numpy array containing the existing bounding boxes
+            trackers_data (:obj:`np.ndarray`): the existing bounding boxes
                 from the existing trackers.
-            iou_threshold: a float indicating the minimum IOU for match.
+            iou_threshold (float): the minimum IOU for match.
 
         Returns:
-            Three Numpy arrays. The first one contains the matches between
-            detections and trackers; the second one contains the unmatched
-            detections and the third one contains the unmatched trackers.
+            matches (:obj:`np.ndarray`): the matches between detections and trackers.
+            unmatched_detections (:obj:`np.ndarray`): the unmatched detections.
+            unmatched trackers (:obj:`np.ndarray`): the unmatched trackers.
         """
 
         # If there is not any tracker yet, just return all detections
@@ -457,13 +505,13 @@ class AgricultureSort():
     def get_crops_motion(
         self,
         sequence: AgriculturalSequence
-    ):
+    ) -> None:
         """
         Calculates a prediction of the crop's position using extrinsics information.
 
         Args:
-            sequence: a features_3d.sequence.AgriculturalSequence object
-                containing crop information during several scenes.
+            sequence (:obj:`features_3d.sequence.AgriculturalSequence`): object that
+                contains all the crop information during several scenes.
         """
         if len(sequence.scenes) > 1:
             current_scene = sequence.scenes[-1]

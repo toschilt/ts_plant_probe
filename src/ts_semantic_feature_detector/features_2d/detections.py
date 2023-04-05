@@ -55,7 +55,7 @@ class DetectionGroup:
         Check if the detection group is empty.
 
         Returns:
-            bool: True if the detection group is empty, False otherwise.
+            is_empty (bool): True if the detection group is empty, False otherwise.
         """
         return len(self.mask_group.data) == 0
 

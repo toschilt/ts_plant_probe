@@ -94,6 +94,9 @@ class Line2D(Curve2D):
 
         Args:
             x (float/:obj:`np.ndarray`): x coordinate(s) to evaluate the line.
+
+        Returns:
+            y (float/:obj:`np.ndarray`): the y coordinate(s) of the line.
         """
         return self.angular_coef*x + self.linear_coef
 
@@ -108,7 +111,10 @@ class Line2D(Curve2D):
         coeficient and b is the linear coeficient. 
 
         Args:
-            y (float/:obj:`np.ndarray`): the y coordinate to evaluate the line.
+            y (float/:obj:`np.ndarray`): the y coordinate(s) to evaluate the line.
+
+        Returns:
+            x (float/:obj:`np.ndarray`): the x coordinate(s) of the line.
         """
         return (y - self.linear_coef)/self.angular_coef
 
