@@ -1,4 +1,7 @@
 """
+Implements basic operations for 2D curves.
+
+The curves are used to filter redundant masks. 
 """
 from typing import Union
 
@@ -13,34 +16,36 @@ class Curve2D:
     easier.
 
     Attributes:
-        x: a Numpy array with the curve's x values.
-        y: a Numpy array with the curve's y values.
+        x (:obj:`np.ndarray`): the curve's x values.
+        y (:obj:`np.ndarray`): the curve's y values.
     """
     
     def __init__(
         self,
         x: npt.ArrayLike = None,
         y: npt.ArrayLike = None
-    ) -> None:
+    ):
         """
         Initializes a curve.
         
         Args:
-            x: a Numpy array with the curve's x values.
-            y: a Numpy array with the curve's y values.
+            x (:obj:`np.ndarray`, optional): the curve's x values.
+            y (:obj:`np.ndarray`, optional): the curve's y values.
         """
         self.x = x
         self.y = y
 
-    def plot(self,
-             options: str = ''):
+    def plot(
+        self,
+        options: str = ''
+    ) -> None:
         """
         Plot the curve using Matplolib library.
 
         Args:
-            options: a string containing the Matplotlib color and
-                line options (see matplotlib.pyplot.plot documentation
-                for more details).
+            options (str, optional): the Matplotlib color and line options 
+                (see :obj:`matplotlib.pyplot.plot` documentation for more 
+                details).
         """
         plt.plot(self.x, self.y, options)
 
@@ -48,14 +53,12 @@ class Line2D(Curve2D):
     """
     Abstraction of a 2D line.
 
-    It inherited from the Curve2D class. See documentation for
-    reference.
+    It inherited from the Curve2D class. See documentation from 
+    :obj:`Curve2D` for reference.
 
     Attributes:
-        angular_coef: a float number containing the line's angular
-            coeficient.
-        linear_coef: a flot number containing the line's linear
-            coeficient.
+        angular_coef (float): the line's angular coeficient.
+        linear_coef: (float): the line's linear coeficient.
     """
 
     def __init__(
@@ -64,17 +67,15 @@ class Line2D(Curve2D):
         linear_coef: float,
         x: npt.ArrayLike = None,
         y: npt.ArrayLike = None,
-    ) -> None:
+    ):
         """
         Initializes a line.
 
         Args:
-            x: a Numpy array with the curve's x values.
-            y: a Numpy array with the curve's y values.
-            angular_coef: a float number containing the line's angular
-                coeficient.
-            linear_coef: a flot number containing the line's linear
-                coeficient.
+            angular_coef (float): the line's angular coeficient.
+            linear_coef (float): the line's linear coeficient.
+            x (:obj:`np.ndarray`, optional): the curve's x values.
+            y (:obj:`np.ndarray`, optional): the curve's y values.
         """
         super().__init__(x, y)
         self.angular_coef = angular_coef
@@ -91,7 +92,7 @@ class Line2D(Curve2D):
         coeficient and b is the linear coeficient. 
 
         Args:
-            x: the x coordinate to evaluate the line
+            x (float/:obj:`np.ndarray`): x coordinate(s) to evaluate the line.
         """
         return self.angular_coef*x + self.linear_coef
 
@@ -106,27 +107,30 @@ class Line2D(Curve2D):
         coeficient and b is the linear coeficient. 
 
         Args:
-            y: the y coordinate to evaluate the line
+            y (float/:obj:`np.ndarray`): the y coordinate to evaluate the line.
         """
         return (y - self.linear_coef)/self.angular_coef
 
     def plot(self,
-             x_values: npt.ArrayLike = None,
-             y_values: npt.ArrayLike = None,
-             options: str = ''):
+        x_values: npt.ArrayLike = None,
+        y_values: npt.ArrayLike = None,
+        options: str = ''
+    ) -> None:
         """
-        Plot the line using Matplolib library.
+        Plot the line using the Matplolib library.
 
         Args:
-            x_values: a Numpy vector containing the x coordinates to plot
+            x_values (:obj:`np.ndarray`, optional): the x coordinates to plot
                 using the line coefficients. If x_values or y_values are
-                not specified, the x and y attributes are used to plot.
-            y_values: a Numpy vector containing the y coordinates to plot
+                not specified, the Curve2D.x and Curve2D.y attributes are 
+                used to plot.
+            y_values (:obj:`np.ndarray`, optional): the y coordinates to plot
                 using the line coefficients. If x_values or y_values are
-                not specified, the x and y attributes are used to plot.
-            options: a string containing the Matplotlib color and
-                line options (see matplotlib.pyplot.plot documentation
-                for more details).
+                not specified, the Curve2D.x and Curve2D.y attributes are 
+                used to plot.
+            options (str, optional): the Matplotlib color and line options 
+                (see :obj:`matplotlib.pyplot.plot` documentation for more 
+                details).
         """
         if x_values is not None:
             plt.plot(x_values, self.evaluate_line_at_x(x_values), options)
