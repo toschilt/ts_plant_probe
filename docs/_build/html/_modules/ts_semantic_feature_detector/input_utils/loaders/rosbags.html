@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ts_semantic_feature_detector.input_utils.loaders.rosbags &mdash; ts_semantic_feature_detector 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            ts_semantic_feature_detector
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">ts_semantic_feature_detector</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">ts_semantic_feature_detector</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ts_semantic_feature_detector.input_utils.loaders.rosbags</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ts_semantic_feature_detector.input_utils.loaders.rosbags</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module implements a class to load decompressed rosbags.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+
+<div class="viewcode-block" id="RosbagLoader"><a class="viewcode-back" href="../../../../ts_semantic_feature_detector.input_utils.loaders.html#ts_semantic_feature_detector.input_utils.loaders.rosbags.RosbagLoader">[docs]</a><span class="k">class</span> <span class="nc">RosbagLoader</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implements some useful functions to load decompressed rosbags.</span>
+
+<span class="sd">    It loads EKF and IMU data.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        ekf (:obj:`np.ndarray`): the EKF data (timestamp, position </span>
+<span class="sd">            and orientation).</span>
+<span class="sd">        ekf_times (:obj:`np.ndarray`): the float timestamps for each</span>
+<span class="sd">            EKF entry.</span>
+<span class="sd">        imu (:obj:`np.ndarray`): the IMU data (timestamp and orientation).</span>
+<span class="sd">        imu_times (:obj:`np.ndarray`): the float timestamps for each</span>
+<span class="sd">            IMU entry.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_path</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the rosbag loader.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_path (str): the path to the the upper folder where the </span>
+<span class="sd">                compressed and the extracted data are storaged. It</span>
+<span class="sd">                is expected a folder arrangement similar to:</span>
+
+<span class="sd">                /data</span>
+<span class="sd">                    /rosbag</span>
+<span class="sd">                        /ekf</span>
+<span class="sd">                            - ekf.csv file</span>
+<span class="sd">                        /imu</span>
+<span class="sd">                            - imu.csv file</span>
+<span class="sd">                    /svo</span>
+<span class="sd">                        /depth</span>
+<span class="sd">                            - PNG images</span>
+<span class="sd">                        /rgb</span>
+<span class="sd">                            - PNG images</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rosbag_path</span> <span class="o">=</span> <span class="n">data_path</span> <span class="o">+</span> <span class="s1">&#39;/rosbag&#39;</span>
+
+        <span class="n">ekf_path</span> <span class="o">=</span> <span class="n">rosbag_path</span> <span class="o">+</span> <span class="s1">&#39;/ekf/ekf.csv&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ekf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ekf_times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_csv_and_times</span><span class="p">(</span><span class="n">ekf_path</span><span class="p">)</span>
+
+        <span class="n">imu_path</span> <span class="o">=</span> <span class="n">rosbag_path</span> <span class="o">+</span> <span class="s1">&#39;/imu/imu.csv&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">imu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">imu_times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_csv_and_times</span><span class="p">(</span><span class="n">imu_path</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RosbagLoader._get_csv_and_times"><a class="viewcode-back" href="../../../../ts_semantic_feature_detector.input_utils.loaders.html#ts_semantic_feature_detector.input_utils.loaders.rosbags.RosbagLoader._get_csv_and_times">[docs]</a>    <span class="k">def</span> <span class="nf">_get_csv_and_times</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">csv_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads a CSV file and constructs the float timestamp for each entry.</span>
+
+<span class="sd">        It is expected that the timestamp seconds and nanoseconds are in the</span>
+<span class="sd">        first and second columns, respectively. It is also expected that the</span>
+<span class="sd">        first line of the file is used for data description (it&#39;s skipped).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            csv_path (str): the path to the CSV file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            data (:obj:`np.ndarray`): the data loaded from the CSV file.</span>
+<span class="sd">            times (:obj:`np.ndarray`): the float timestamps for each entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span>
+            <span class="n">csv_path</span><span class="p">,</span>
+            <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">skiprows</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">data</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1e9</span>
+
+        <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">times</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lucas Toschi.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,4 +1,5 @@
 """
+Implements 2D visualizations using Matplotlib library.
 """
 
 from typing import Tuple, Union
@@ -22,7 +23,7 @@ class Visualizer2D:
         opt_avg_curve: str = None,
         opt_ransac_line: str = None,
         alpha: float = 1.0,
-    ):
+    ) -> None:
         """
         Plot the group of masks.
 
@@ -32,20 +33,19 @@ class Visualizer2D:
             number of masks.
 
         Args:
-            mask_group: the features2d.masks.MaskGroup object.
-            rgb_img: the RGB image. If it is not informed, then the masks
-                are plotted with no RGB image in the back.
-            subplot_shape: mask distribution in the figure. If it is
-                not informed, the masks are showed in the same figure.
-            opt_avg_curve: a string containing the Matplotlib color and
-                line options for the average curve (see matplotlib.pyplot.plot 
-                documentation for more details). If not specified, the curve
-                will be omitted.
-            opt_ransac_line: a string containing the Matplotlib color and
-                line options for the RANSAC line (see matplotlib.pyplot.plot 
-                documentation for more details). If not specified, the line 
-                will be omitted.
-            alpha: a float containing the mask transparency amount.
+            mask_group (:obj:`features2d.masks.MaskGroup`): the mask group.
+            rgb_img (PIL.Image): the RGB image. If it is not informed, then 
+                the masks are plotted with no RGB image in the back.
+            subplot_shape (a tuple of [int, int], optional): mask distribution
+                in the figure. If it is not informed, the masks are showed in the 
+                same figure.
+            opt_avg_curve (str, optional): the Matplotlib color and line options for 
+                the average curve (see matplotlib.pyplot.plot documentation 
+                for more details). If not specified, the curve will be omitted.
+            opt_ransac_line (str, optional): the Matplotlib color and line options
+                for the RANSAC line (see matplotlib.pyplot.plot documentation for more 
+                details). If not specified, the line will be omitted.
+            alpha (float, optional): the mask transparency amount.
         """
         plt.figure()
 
@@ -81,16 +81,15 @@ class Visualizer2D:
     def show(
         self,
         show_maximized: bool = False
-    ):
+    ) -> None:
         """
         Shows the previously configured plots.
 
         Args:
-            show_maximized: boolean value that indicates if the plot
+            show_maximized (bool, optional): indicates if the plot
                 will be showed with a maximized window.
         """
         if show_maximized:
             figManager = plt.get_current_fig_manager()
             figManager.window.showMaximized()
-
         plt.show()

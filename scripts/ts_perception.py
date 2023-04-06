@@ -24,6 +24,7 @@ from ts_semantic_feature_detector.features_2d.tracking import *
 from ts_semantic_feature_detector.visualization.colors import get_color_from_cluster
 from ts_semantic_feature_detector.visualization.visualizer_2d import Visualizer2D
 from ts_semantic_feature_detector.visualization.visualizer_3d import Visualizer3D
+from ts_semantic_feature_detector.perfomance.timer import Timer
 from ts_semantic_feature_detector.output_utils.writer import OutputWriter
 
 class TerraSentiaPerception:
@@ -74,10 +75,14 @@ class TerraSentiaPerception:
             iou_threshold=0.1
         )
 
+        rospy.loginfo('Loading timer...')
+        self.timer = Timer()
+
         rospy.loginfo('Loading output writer...')
         self.output_writer = OutputWriter(
             self.rospack.get_path('ts_semantic_feature_detector') + '/output/odometry_factors.txt',
             self.rospack.get_path('ts_semantic_feature_detector') + '/output/emerging_points.txt',
+            self.rospack.get_path('ts_semantic_feature_detector') + '/output/times.txt',
             ','
         )
 
@@ -93,20 +98,27 @@ class TerraSentiaPerception:
             rospy.loginfo(f'Getting agricultural scene [{data["index"]}]...')
 
             rospy.loginfo('Getting extrinsics...')
+            self.timer.start('get_extrinsics')
             p_world_body, orient_world_body, p_camera_body, orient_camera_body = get_extrinsics(
                 data['ekf'],
                 data['imu']
             )
+            self.timer.stop('get_extrinsics')
 
             rospy.loginfo('Writing robot pose...')
+            self.timer.start('write_odometry_factors')
             self.output_writer.write_odometry_factors(
                 data['index'],
                 data['ekf']
             )
+            self.timer.stop('write_odometry_factors')
             
             rospy.loginfo('Getting masks and boxes...')
+            self.timer.start('inference')
             __, boxes, masks, scores = self.model.inference(data['rgb'])
+            self.timer.stop('inference')
 
+            self.timer.start('detections')
             detections = DetectionGroup(
                 boxes,
                 masks,
@@ -115,10 +127,12 @@ class TerraSentiaPerception:
             )
             detections.metric_filtering('score', score_threshold=0.5)
             detections.filter_redundancy(x_coordinate_threshold=20)
+            self.timer.stop('inference')
 
             # Check if there are any valid detections.
             if not detections.is_empty():
                 rospy.loginfo('Getting the ground plane...')
+                self.timer.start('ground_plane')
                 gp = GroundPlane(
                     data['rgb'],
                     'threshold_gaussian',
@@ -134,8 +148,10 @@ class TerraSentiaPerception:
                         'gaussian_filter': 12
                     }
                 )
+                self.timer.stop('ground_plane')
 
                 rospy.loginfo('Getting the 3D points...')
+                self.timer.start('corn_crop_group')
                 crop_group = CornCropGroup(
                     detections,
                     self.camera,
@@ -143,49 +159,67 @@ class TerraSentiaPerception:
                     mask_filter_threshold=2,
                     ground_plane=gp
                 )
+                self.timer.stop('corn_crop_group')
 
                 rospy.loginfo('Adding extrinsics to the 3D points...')
+                self.timer.start('scene')
                 scene = AgriculturalScene(crop_group, gp)
+                self.timer.stop('scene')
+
+                self.timer.start('add_extrinsics_information')
                 scene.add_extrinsics_information(
                     p_world_body,
                     orient_world_body,
                     p_camera_body,
                     orient_camera_body
                 )
+                self.timer.stop('add_extrinsics_information')
+
+                self.timer.start('add_scene')
                 sequence.add_scene(scene)
+                self.timer.stop('add_scene')
 
                 # rospy.loginfo('Tracking boxes...')
                 # self.tracker.step(sequence)
 
                 rospy.loginfo('Clustering crops...')
+                self.timer.start('cluster_crops')
                 sequence.cluster_crops()
+                self.timer.stop('cluster_crops')
 
                 rospy.loginfo('Writing emerging points...')
+                self.timer.start('write_emerging_points')
                 self.output_writer.write_emerging_points(
                     data['index'],
                     scene
                 )
+                self.timer.stop('write_emerging_points')
 
                 rospy.loginfo('Filtering old scenes...')
+                self.timer.start('remove_old_scenes')
                 sequence.remove_old_scenes(max_age=200)
+                self.timer.stop('remove_old_scenes')
+
+                rospy.loginfo('Writing times...')
+                self.output_writer.write_times(self.timer)
 
             # if sequence.scenes:
-                # rospy.loginfo('Plotting...')
+            #     rospy.loginfo('Plotting...')
 
-                # self.plot_tracking(
-                #     data,
-                #     sequence,
-                #     detections,
-                #     plot_predictions=False,
-                #     save_fig=False
-                # )
+            #     self.plot_tracking(
+            #         data,
+            #         sequence,
+            #         detections,
+            #         plot_predictions=False,
+            #         save_fig=False
+            #     )
                 
-                # self.plot_3d(
-                #     data,
-                #     sequence,
-                #     v_3d,
-                #     see_sequence=see_sequence
-                # )
+            #     self.plot_3d(
+            #         data,
+            #         sequence,
+            #         v_3d,
+            #         see_sequence=see_sequence
+            #     )
 
     def plot_tracking(
         self, 

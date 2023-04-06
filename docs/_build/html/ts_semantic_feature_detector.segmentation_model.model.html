@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ts_semantic_feature_detector.segmentation_model.model package &mdash; ts_semantic_feature_detector 0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ts_semantic_feature_detector.segmentation_model.model.detection package" href="ts_semantic_feature_detector.segmentation_model.model.detection.html" />
+    <link rel="prev" title="ts_semantic_feature_detector.segmentation_model package" href="ts_semantic_feature_detector.segmentation_model.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ts_semantic_feature_detector
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">ts_semantic_feature_detector</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="ts_semantic_feature_detector.html">ts_semantic_feature_detector package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="ts_semantic_feature_detector.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.features_2d.html">ts_semantic_feature_detector.features_2d package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.features_3d.html">ts_semantic_feature_detector.features_3d package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.input_utils.html">ts_semantic_feature_detector.input_utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.output_utils.html">ts_semantic_feature_detector.output_utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.perfomance.html">ts_semantic_feature_detector.perfomance package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.html">ts_semantic_feature_detector.segmentation_model package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.visualization.html">ts_semantic_feature_detector.visualization package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.html#module-ts_semantic_feature_detector">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ts_semantic_feature_detector</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">ts_semantic_feature_detector</a></li>
+          <li class="breadcrumb-item"><a href="ts_semantic_feature_detector.html">ts_semantic_feature_detector package</a></li>
+          <li class="breadcrumb-item"><a href="ts_semantic_feature_detector.segmentation_model.html">ts_semantic_feature_detector.segmentation_model package</a></li>
+      <li class="breadcrumb-item active">ts_semantic_feature_detector.segmentation_model.model package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ts_semantic_feature_detector.segmentation_model.model.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ts-semantic-feature-detector-segmentation-model-model-package">
+<h1>ts_semantic_feature_detector.segmentation_model.model package<a class="headerlink" href="#ts-semantic-feature-detector-segmentation-model-model-package" title="Permalink to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html">ts_semantic_feature_detector.segmentation_model.model.detection package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#module-ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval">ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.CocoEvaluator"><code class="docutils literal notranslate"><span class="pre">CocoEvaluator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.CocoEvaluator.accumulate"><code class="docutils literal notranslate"><span class="pre">CocoEvaluator.accumulate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.CocoEvaluator.prepare"><code class="docutils literal notranslate"><span class="pre">CocoEvaluator.prepare()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.CocoEvaluator.prepare_for_coco_detection"><code class="docutils literal notranslate"><span class="pre">CocoEvaluator.prepare_for_coco_detection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.CocoEvaluator.prepare_for_coco_keypoint"><code class="docutils literal notranslate"><span class="pre">CocoEvaluator.prepare_for_coco_keypoint()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.CocoEvaluator.prepare_for_coco_segmentation"><code class="docutils literal notranslate"><span class="pre">CocoEvaluator.prepare_for_coco_segmentation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.CocoEvaluator.summarize"><code class="docutils literal notranslate"><span class="pre">CocoEvaluator.summarize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.CocoEvaluator.synchronize_between_processes"><code class="docutils literal notranslate"><span class="pre">CocoEvaluator.synchronize_between_processes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.CocoEvaluator.update"><code class="docutils literal notranslate"><span class="pre">CocoEvaluator.update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.convert_to_xywh"><code class="docutils literal notranslate"><span class="pre">convert_to_xywh()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.create_common_coco_eval"><code class="docutils literal notranslate"><span class="pre">create_common_coco_eval()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.evaluate"><code class="docutils literal notranslate"><span class="pre">evaluate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_eval.merge"><code class="docutils literal notranslate"><span class="pre">merge()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#module-ts_semantic_feature_detector.segmentation_model.model.detection.coco_utils">ts_semantic_feature_detector.segmentation_model.model.detection.coco_utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_utils.CocoDetection"><code class="docutils literal notranslate"><span class="pre">CocoDetection</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_utils.ConvertCocoPolysToMask"><code class="docutils literal notranslate"><span class="pre">ConvertCocoPolysToMask</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_utils.FilterAndRemapCocoCategories"><code class="docutils literal notranslate"><span class="pre">FilterAndRemapCocoCategories</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_utils.convert_coco_poly_to_mask"><code class="docutils literal notranslate"><span class="pre">convert_coco_poly_to_mask()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_utils.convert_to_coco_api"><code class="docutils literal notranslate"><span class="pre">convert_to_coco_api()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_utils.get_coco"><code class="docutils literal notranslate"><span class="pre">get_coco()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_utils.get_coco_api_from_dataset"><code class="docutils literal notranslate"><span class="pre">get_coco_api_from_dataset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.coco_utils.get_coco_kp"><code class="docutils literal notranslate"><span class="pre">get_coco_kp()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#module-ts_semantic_feature_detector.segmentation_model.model.detection.engine">ts_semantic_feature_detector.segmentation_model.model.detection.engine module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.engine.evaluate"><code class="docutils literal notranslate"><span class="pre">evaluate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.engine.train_one_epoch"><code class="docutils literal notranslate"><span class="pre">train_one_epoch()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#module-ts_semantic_feature_detector.segmentation_model.model.detection.group_by_aspect_ratio">ts_semantic_feature_detector.segmentation_model.model.detection.group_by_aspect_ratio module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.group_by_aspect_ratio.GroupedBatchSampler"><code class="docutils literal notranslate"><span class="pre">GroupedBatchSampler</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.group_by_aspect_ratio.compute_aspect_ratios"><code class="docutils literal notranslate"><span class="pre">compute_aspect_ratios()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.group_by_aspect_ratio.create_aspect_ratio_groups"><code class="docutils literal notranslate"><span class="pre">create_aspect_ratio_groups()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts-semantic-feature-detector-segmentation-model-model-detection-presets-module">ts_semantic_feature_detector.segmentation_model.model.detection.presets module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts-semantic-feature-detector-segmentation-model-model-detection-train-module">ts_semantic_feature_detector.segmentation_model.model.detection.train module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#module-ts_semantic_feature_detector.segmentation_model.model.detection.transforms">ts_semantic_feature_detector.segmentation_model.model.detection.transforms module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.Compose"><code class="docutils literal notranslate"><span class="pre">Compose</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.ConvertImageDtype"><code class="docutils literal notranslate"><span class="pre">ConvertImageDtype</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.ConvertImageDtype.forward"><code class="docutils literal notranslate"><span class="pre">ConvertImageDtype.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.ConvertImageDtype.training"><code class="docutils literal notranslate"><span class="pre">ConvertImageDtype.training</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.FixedSizeCrop"><code class="docutils literal notranslate"><span class="pre">FixedSizeCrop</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.FixedSizeCrop.forward"><code class="docutils literal notranslate"><span class="pre">FixedSizeCrop.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.FixedSizeCrop.training"><code class="docutils literal notranslate"><span class="pre">FixedSizeCrop.training</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.PILToTensor"><code class="docutils literal notranslate"><span class="pre">PILToTensor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.PILToTensor.forward"><code class="docutils literal notranslate"><span class="pre">PILToTensor.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.PILToTensor.training"><code class="docutils literal notranslate"><span class="pre">PILToTensor.training</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomHorizontalFlip"><code class="docutils literal notranslate"><span class="pre">RandomHorizontalFlip</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomHorizontalFlip.forward"><code class="docutils literal notranslate"><span class="pre">RandomHorizontalFlip.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomHorizontalFlip.training"><code class="docutils literal notranslate"><span class="pre">RandomHorizontalFlip.training</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomIoUCrop"><code class="docutils literal notranslate"><span class="pre">RandomIoUCrop</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomIoUCrop.forward"><code class="docutils literal notranslate"><span class="pre">RandomIoUCrop.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomIoUCrop.training"><code class="docutils literal notranslate"><span class="pre">RandomIoUCrop.training</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomPhotometricDistort"><code class="docutils literal notranslate"><span class="pre">RandomPhotometricDistort</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomPhotometricDistort.forward"><code class="docutils literal notranslate"><span class="pre">RandomPhotometricDistort.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomPhotometricDistort.training"><code class="docutils literal notranslate"><span class="pre">RandomPhotometricDistort.training</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomShortestSize"><code class="docutils literal notranslate"><span class="pre">RandomShortestSize</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomShortestSize.forward"><code class="docutils literal notranslate"><span class="pre">RandomShortestSize.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomShortestSize.training"><code class="docutils literal notranslate"><span class="pre">RandomShortestSize.training</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomZoomOut"><code class="docutils literal notranslate"><span class="pre">RandomZoomOut</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomZoomOut.forward"><code class="docutils literal notranslate"><span class="pre">RandomZoomOut.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.RandomZoomOut.training"><code class="docutils literal notranslate"><span class="pre">RandomZoomOut.training</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.ScaleJitter"><code class="docutils literal notranslate"><span class="pre">ScaleJitter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.ScaleJitter.forward"><code class="docutils literal notranslate"><span class="pre">ScaleJitter.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.ScaleJitter.training"><code class="docutils literal notranslate"><span class="pre">ScaleJitter.training</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.SimpleCopyPaste"><code class="docutils literal notranslate"><span class="pre">SimpleCopyPaste</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.SimpleCopyPaste.forward"><code class="docutils literal notranslate"><span class="pre">SimpleCopyPaste.forward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.SimpleCopyPaste.training"><code class="docutils literal notranslate"><span class="pre">SimpleCopyPaste.training</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#module-ts_semantic_feature_detector.segmentation_model.model.detection.utils">ts_semantic_feature_detector.segmentation_model.model.detection.utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.MetricLogger"><code class="docutils literal notranslate"><span class="pre">MetricLogger</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.MetricLogger.add_meter"><code class="docutils literal notranslate"><span class="pre">MetricLogger.add_meter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.MetricLogger.log_every"><code class="docutils literal notranslate"><span class="pre">MetricLogger.log_every()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.MetricLogger.synchronize_between_processes"><code class="docutils literal notranslate"><span class="pre">MetricLogger.synchronize_between_processes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.MetricLogger.update"><code class="docutils literal notranslate"><span class="pre">MetricLogger.update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.SmoothedValue"><code class="docutils literal notranslate"><span class="pre">SmoothedValue</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.SmoothedValue.avg"><code class="docutils literal notranslate"><span class="pre">SmoothedValue.avg</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.SmoothedValue.global_avg"><code class="docutils literal notranslate"><span class="pre">SmoothedValue.global_avg</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.SmoothedValue.max"><code class="docutils literal notranslate"><span class="pre">SmoothedValue.max</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.SmoothedValue.median"><code class="docutils literal notranslate"><span class="pre">SmoothedValue.median</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.SmoothedValue.synchronize_between_processes"><code class="docutils literal notranslate"><span class="pre">SmoothedValue.synchronize_between_processes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.SmoothedValue.update"><code class="docutils literal notranslate"><span class="pre">SmoothedValue.update()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.SmoothedValue.value"><code class="docutils literal notranslate"><span class="pre">SmoothedValue.value</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.all_gather"><code class="docutils literal notranslate"><span class="pre">all_gather()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.collate_fn"><code class="docutils literal notranslate"><span class="pre">collate_fn()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.get_rank"><code class="docutils literal notranslate"><span class="pre">get_rank()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.get_world_size"><code class="docutils literal notranslate"><span class="pre">get_world_size()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.init_distributed_mode"><code class="docutils literal notranslate"><span class="pre">init_distributed_mode()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.is_dist_avail_and_initialized"><code class="docutils literal notranslate"><span class="pre">is_dist_avail_and_initialized()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.is_main_process"><code class="docutils literal notranslate"><span class="pre">is_main_process()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.mkdir"><code class="docutils literal notranslate"><span class="pre">mkdir()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.reduce_dict"><code class="docutils literal notranslate"><span class="pre">reduce_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.save_on_master"><code class="docutils literal notranslate"><span class="pre">save_on_master()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.utils.setup_for_distributed"><code class="docutils literal notranslate"><span class="pre">setup_for_distributed()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#module-ts_semantic_feature_detector.segmentation_model.model.detection">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation">
+<span id="ts-semantic-feature-detector-segmentation-model-model-mask-rcnn-stem-segmentation-module"></span><h2>ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation module<a class="headerlink" href="#module-ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation" title="Permalink to this heading"></a></h2>
+<p>Implements the Mask RCNN model to do stem mask segmentation.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.</span></span><span class="sig-name descname"><span class="pre">MaskRCNNStemSegmentationModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts_dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.ts_dataset.html#ts_semantic_feature_detector.segmentation_model.ts_dataset.ts_load_dataset.TerraSentiaDataset" title="ts_semantic_feature_detector.segmentation_model.ts_dataset.ts_load_dataset.TerraSentiaDataset"><span class="pre">TerraSentiaDataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_min_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_max_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transforms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ts_semantic_feature_detector/segmentation_model/model/mask_rcnn_stem_segmentation.html#MaskRCNNStemSegmentationModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Implements the Mask RCNN model to do stem mask segmentation.</p>
+<p>Uses the Improved Mask R-CNN model with a ResNet-50-FPN backbone
+from the ‘Benchmarking Detection Transfer Learning with Vision
+Transformers’ &lt;<a class="reference external" href="https://arxiv.org/abs/2111.11429">https://arxiv.org/abs/2111.11429</a>&gt; paper, implemented
+in the PyTorch framework. Versions: torch (1.13.1) and torchvision
+(0.14.1).</p>
+<p>It makes the necessary adaptations to the existing model to change
+the number of classes predicted (in this case, we are interested in
+only one class: the stems). It also implements a training and
+a inference methods to allow easy use.</p>
+<dl class="simple">
+<dt>TODO: Remove TerraSentiaDataset object requirement to do inference.</dt><dd><p>Create another structure to encapsulate information about the images.</p>
+</dd>
+</dl>
+<p>TODO: Add more explanation about train_log and validation_log dictionaries.
+TODO: Encapsule some of train method routines in private functions.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.hyperparams">
+<span class="sig-name descname"><span class="pre">hyperparams</span></span><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.hyperparams" title="Permalink to this definition"></a></dt>
+<dd><p>the hyperparameters values. More
+description can be found at the constructor method documentation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a dict [str, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.dataset">
+<span class="sig-name descname"><span class="pre">dataset</span></span><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.dataset" title="Permalink to this definition"></a></dt>
+<dd><p>The TerraSentiaDataset object. It contains all images path and
+do all the pre-processing needed. It also contains some information
+about the images, as original size, mean and standard deviation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">segmentation_model.ts_dataset.ts_load_dataset.TerraSentiaDataset</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.model">
+<span class="sig-name descname"><span class="pre">model</span></span><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.model" title="Permalink to this definition"></a></dt>
+<dd><p>The Mask RCNN model customized to the stem segmentation task.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">torchvision.models.detection.mask_rcnn.MaskRCNN</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.optimizer">
+<span class="sig-name descname"><span class="pre">optimizer</span></span><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.optimizer" title="Permalink to this definition"></a></dt>
+<dd><p>the SGD optimizer for training the model</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.lr_scheduler">
+<span class="sig-name descname"><span class="pre">lr_scheduler</span></span><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.lr_scheduler" title="Permalink to this definition"></a></dt>
+<dd><p>the LR Scheduler for training the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.transforms">
+<span class="sig-name descname"><span class="pre">transforms</span></span><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.transforms" title="Permalink to this definition"></a></dt>
+<dd><p>a list of PyTorch transforms to be applied to images when loaded.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.train_log">
+<span class="sig-name descname"><span class="pre">train_log</span></span><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.train_log" title="Permalink to this definition"></a></dt>
+<dd><p>a dictionary containing all the training metrics.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.validation_log">
+<span class="sig-name descname"><span class="pre">validation_log</span></span><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.validation_log" title="Permalink to this definition"></a></dt>
+<dd><p>a dictionary containing all the validation metrics.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.last_best_mAP">
+<span class="sig-name descname"><span class="pre">last_best_mAP</span></span><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.last_best_mAP" title="Permalink to this definition"></a></dt>
+<dd><p>the last best Average Precision calculated during training.
+It measures how well the model performed at validation set.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.start_epoch">
+<span class="sig-name descname"><span class="pre">start_epoch</span></span><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.start_epoch" title="Permalink to this definition"></a></dt>
+<dd><p>the epoch that the model stopped training.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">train_log</span></span><a class="headerlink" href="#id0" title="Permalink to this definition"></a></dt>
+<dd><p>a dictionary containing training metrics data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">validation_log</span></span><a class="headerlink" href="#id1" title="Permalink to this definition"></a></dt>
+<dd><p>a dictionary containing validation metrics data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.train_dataset_idxs">
+<span class="sig-name descname"><span class="pre">train_dataset_idxs</span></span><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.train_dataset_idxs" title="Permalink to this definition"></a></dt>
+<dd><p>a list containing the training dataset images.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.validation_dataset_idxs">
+<span class="sig-name descname"><span class="pre">validation_dataset_idxs</span></span><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.validation_dataset_idxs" title="Permalink to this definition"></a></dt>
+<dd><p>a list containing the validation dataset images.</p>
+</dd></dl>
+
+<p>Initializes the model with the necessary modifications.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ts_dataset</strong> – TerraSentiaDataset object. It is needed for training
+and inference. It encapsules all the data for training and
+has essential information about the images for inference.</p></li>
+<li><p><strong>input_min_size</strong> – The minimum size to resize image before inserting it
+into the model.</p></li>
+<li><p><strong>input_max_size</strong> – The maximum size to resize image before inserting it
+into the model.</p></li>
+<li><p><strong>transforms</strong> – a list of PyTorch transforms to be applied to images when loaded.
+If transforms is not None, it will be set for training or inference
+depending on model_path value.</p></li>
+<li><p><strong>model_path</strong> – a string containing the path to the trained model. If it is None,
+transforms attribute is evaluated for training. If it is not None, the
+transforms attribute is evaluated for inference.</p></li>
+<li><p><strong>train</strong> – a boolean value indicating if the user wants to train the network.</p></li>
+</ul>
+</dd>
+</dl>
+<dl>
+<dt><a href="#id2"><span class="problematic" id="id3">**</span></a>kwargs:</dt><dd><p>lr: the SGD optimizer learning rate. Default = 0.005
+momentum: the SGD optimizer momentum. Default = 0.9
+weight_decay: the SGD optimizer weight decay. Default = 0.0005
+step_size: the amount of epochs to apply learning rate decay. Default = 30
+gamma: the learning decay rate. Default = 0.1
+checkpoint_epochs: the number of epochs between safety model saves. Default = 20
+checkpoint_mAP_threshold: the minimum mAP improvement to save a new model.</p>
+<blockquote>
+<div><p>Default = 0.01</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel._divide_dataset">
+<span class="sig-name descname"><span class="pre">_divide_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_percentage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ts_semantic_feature_detector/segmentation_model/model/mask_rcnn_stem_segmentation.html#MaskRCNNStemSegmentationModel._divide_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel._divide_dataset" title="Permalink to this definition"></a></dt>
+<dd><p>Divide the dataset into training and validation subsets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>train_percentage</strong> – the percentage of all the dataset that will be used
+as training images. The remaining portion will be used to evaluate
+the model during training.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>The training and validation subsets, respectivaly. Both are lists with</strong> – the indices that represent their position at the
+ts_load_dataset.TerraSentiaDataset list of images.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel._get_model">
+<span class="sig-name descname"><span class="pre">_get_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_min_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_max_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_classes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">MaskRCNN</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">SGD</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">StepLR</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ts_semantic_feature_detector/segmentation_model/model/mask_rcnn_stem_segmentation.html#MaskRCNNStemSegmentationModel._get_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel._get_model" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs the model from PyTorch and adapt to stem segmentation task.</p>
+<p>It also constructs a SGD optimizer and a learning rate scheduler.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_min_size</strong> – The minimum size to resize image before inserting it
+into the model.</p></li>
+<li><p><strong>input_max_size</strong> – The maximum size to resize image before inserting it
+into the model.</p></li>
+<li><p><strong>model_path</strong> – a string containing the path to the trained model. If
+specified, model weights are loaded.</p></li>
+<li><p><strong>num_classes</strong> – The number of classes that the model will look for.
+For this task, num_classes should be 2 (stem and background).
+This value is used as default.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>the MaskRCNN model, the SGD optimizer and the LR Scheduler, respectively.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel._get_transforms">
+<span class="sig-name descname"><span class="pre">_get_transforms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">training</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="ts_semantic_feature_detector.segmentation_model.model.detection.html#ts_semantic_feature_detector.segmentation_model.model.detection.transforms.Compose" title="ts_semantic_feature_detector.segmentation_model.model.detection.transforms.Compose"><span class="pre">Compose</span></a></span></span><a class="reference internal" href="_modules/ts_semantic_feature_detector/segmentation_model/model/mask_rcnn_stem_segmentation.html#MaskRCNNStemSegmentationModel._get_transforms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel._get_transforms" title="Permalink to this definition"></a></dt>
+<dd><p>Returns standard PyTorch transforms composed for the mask segmentation task.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>training</strong> – boolean value that indicates if the model will be used
+for training.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel._log_to_file">
+<span class="sig-name descname"><span class="pre">_log_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ts_semantic_feature_detector/segmentation_model/model/mask_rcnn_stem_segmentation.html#MaskRCNNStemSegmentationModel._log_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel._log_to_file" title="Permalink to this definition"></a></dt>
+<dd><p>Write a file with desired data.</p>
+<p>#TODO: create the folder if it not exist</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – The path where it is desired to write the log.</p></li>
+<li><p><strong>data</strong> – a list or a dictionary with the data to be logged.
+If a dictionary is passed, it dumps into the file
+in a json format. If a list is passed, it writes
+every position in a new line.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.inference">
+<span class="sig-name descname"><span class="pre">inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inference_img</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">_SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">dtype</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">_NestedSequence</span><span class="p"><span class="pre">[</span></span><span class="pre">_SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">dtype</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">complex</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">_NestedSequence</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">complex</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inference_img_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Image</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">dtype</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">_NestedSequence</span><span class="p"><span class="pre">[</span></span><span class="pre">_SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">dtype</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">complex</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">_NestedSequence</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">complex</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">dtype</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">_NestedSequence</span><span class="p"><span class="pre">[</span></span><span class="pre">_SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">dtype</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">complex</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">_NestedSequence</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">complex</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">dtype</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">_NestedSequence</span><span class="p"><span class="pre">[</span></span><span class="pre">_SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">dtype</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">complex</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">_NestedSequence</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">complex</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ts_semantic_feature_detector/segmentation_model/model/mask_rcnn_stem_segmentation.html#MaskRCNNStemSegmentationModel.inference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.inference" title="Permalink to this definition"></a></dt>
+<dd><p>Passes a image through the network and outputs the result.</p>
+<p>The result is filtered by project convenience, therefore some
+network outputs are inaccessible using this method.</p>
+<p>TODO: incorporate the same transformation object from the dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inference_img</strong> – a Numpy array containing the image. If it is not
+provided, the path to the image must be informed.</p></li>
+<li><p><strong>inference_img_path</strong> – the path to the image. If it is not provided,
+the path to the image must be informed.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>the RGB image</strong> (<em>PIL image class</em>)</p></li>
+<li><p><strong>a tuple of three Numpy arrays</strong> – the bounding boxes,</p></li>
+<li><p><strong>the mask images and the scores for each one of</strong></p></li>
+<li><p><strong>the detected instances, respectively.</strong></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_percentage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_epochs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_workers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ts_semantic_feature_detector/segmentation_model/model/mask_rcnn_stem_segmentation.html#MaskRCNNStemSegmentationModel.train"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ts_semantic_feature_detector.segmentation_model.model.mask_rcnn_stem_segmentation.MaskRCNNStemSegmentationModel.train" title="Permalink to this definition"></a></dt>
+<dd><p>Train the model and log data when needed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_percentage</strong> – the percentage of all the dataset that will be used
+as training images. The remaining portion will be used to evaluate
+the model during training.</p></li>
+<li><p><strong>training_batch_size</strong> – the size of the batch size during training.</p></li>
+<li><p><strong>validation_batch_size</strong> – the size of the batch size during validation.</p></li>
+<li><p><strong>num_epochs</strong> – number of epochs for the training.</p></li>
+<li><p><strong>log_path</strong> – the path to the folder where the logs will be written. If None,
+logging is deactivated.</p></li>
+<li><p><strong>num_workers</strong> – the number of sub-processes to use for data loading.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-ts_semantic_feature_detector.segmentation_model.model">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-ts_semantic_feature_detector.segmentation_model.model" title="Permalink to this heading"></a></h2>
+<p>Implements the Mask-RCNN model using the PyTorch framework.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ts_semantic_feature_detector.segmentation_model.html" class="btn btn-neutral float-left" title="ts_semantic_feature_detector.segmentation_model package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ts_semantic_feature_detector.segmentation_model.model.detection.html" class="btn btn-neutral float-right" title="ts_semantic_feature_detector.segmentation_model.model.detection package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lucas Toschi.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

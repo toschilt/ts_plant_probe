@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ts_semantic_feature_detector.features_3d.camera &mdash; ts_semantic_feature_detector 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ts_semantic_feature_detector
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">ts_semantic_feature_detector</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ts_semantic_feature_detector</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ts_semantic_feature_detector.features_3d.camera</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ts_semantic_feature_detector.features_3d.camera</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module that implements stereo camera related classes and methods.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+
+<div class="viewcode-block" id="StereoCamera"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_3d.html#ts_semantic_feature_detector.features_3d.camera.StereoCamera">[docs]</a><span class="k">class</span> <span class="nc">StereoCamera</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstracts some properties and methods related to the StereoCamera.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        intrinsics_matrix (np.ndarray): the instrinsics matrix values (fx, fy, cx, cy).</span>
+<span class="sd">        intrinsics_matrix_inv (np.ndarray): the inverse intrinsics matrix.</span>
+<span class="sd">        size (a tuple (int, int)): containing the image size (width, height)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">intrinsics</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+        <span class="n">size</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the stereo camera.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            intrinsecs (a tuple [float, float, float, float]): the four stereo </span>
+<span class="sd">                camera intrinsics values ([fx, fy, cx, cy]).</span>
+<span class="sd">            size (tuple [int, int]): the image size (width, height)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">intrinsics_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[[</span><span class="n">intrinsics</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">intrinsics</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span>
+             <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">intrinsics</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">intrinsics</span><span class="p">[</span><span class="mi">3</span><span class="p">]],</span>
+             <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">intrinsics_matrix_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">intrinsics_matrix</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="StereoCamera.get_3d_point"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_3d.html#ts_semantic_feature_detector.features_3d.camera.StereoCamera.get_3d_point">[docs]</a>    <span class="k">def</span> <span class="nf">get_3d_point</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">p_2d</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">depth</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the 3D points in the camera reference frame.</span>
+
+<span class="sd">        Uses the equation p_3d = z*(K_inv @ p_2d), where p_3d is the</span>
+<span class="sd">        3D point vector, z is the depth information, K_inv the inverse</span>
+<span class="sd">        intrinsics matrix and p_2d is the 2D point vector (in homogeneous</span>
+<span class="sd">        coordinates). p_2d is in homogeneous coordinates, but p_3d is not. </span>
+<span class="sd">        The scalar z makes the operation correct.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            p_2d (:obj:`np.ndarray`): the 2D point in homogeneous coordinates </span>
+<span class="sd">                ([x, y, 1]).</span>
+<span class="sd">            depth (float): the depth information related to the 2D point.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">depth</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">intrinsics_matrix_inv</span> <span class="o">@</span> <span class="n">p_2d</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StereoCamera.get_2d_point"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_3d.html#ts_semantic_feature_detector.features_3d.camera.StereoCamera.get_2d_point">[docs]</a>    <span class="k">def</span> <span class="nf">get_2d_point</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">p_3d</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the 2D point in the image reference frame.</span>
+
+<span class="sd">        Uses the equation p_2d = 1/z*(K @ p_3d), where p_2d is the</span>
+<span class="sd">        2D point vector (in homogenenous coordinates), z is the depth</span>
+<span class="sd">        information, K is the intrinsics matrix and p_3d is the 3D point</span>
+<span class="sd">        vector. p_2d is in homogeneous coordinates, but p_3d is not. </span>
+<span class="sd">        The scalar 1/z makes the operation correct.</span>
+
+<span class="sd">        The depth information can be ignored, as the z coordinate can be</span>
+<span class="sd">        equivalently assumed to be 1 as the equation above shows.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            p_3d (:obj:`np.ndarray`): the 3D point in homogeneous coordinates</span>
+<span class="sd">                ([x, y, z, w]).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">intrinsics</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">intrinsics_matrix</span><span class="p">,</span> <span class="p">[[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">p_2d</span> <span class="o">=</span> <span class="n">intrinsics</span> <span class="o">@</span> <span class="n">p_3d</span>
+        <span class="k">return</span> <span class="n">p_2d</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="n">p_2d</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span></div>
+    
+<div class="viewcode-block" id="StereoCamera.load_image"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_3d.html#ts_semantic_feature_detector.features_3d.camera.StereoCamera.load_image">[docs]</a>    <span class="k">def</span> <span class="nf">load_image</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">image_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads a single image using the PIL library.</span>
+
+<span class="sd">        Has the purpose of avoiding explicit loading in main programs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            image_path (str): the path to the image.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            data (:obj:`np.ndarray`): the data from the image.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">image_path</span><span class="p">))</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lucas Toschi.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

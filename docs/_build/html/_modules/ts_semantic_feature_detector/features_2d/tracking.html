@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ts_semantic_feature_detector.features_2d.tracking &mdash; ts_semantic_feature_detector 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ts_semantic_feature_detector
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">ts_semantic_feature_detector</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ts_semantic_feature_detector</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ts_semantic_feature_detector.features_2d.tracking</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ts_semantic_feature_detector.features_2d.tracking</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Implements a tracker for corn crops using SORT algorithm.</span>
+
+<span class="sd">SORT is a simple, online and realtime tracking algorithm for 2D multiple</span>
+<span class="sd">object tracking in video sequences. It works with bounding boxes.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+<span class="kn">from</span> <span class="nn">filterpy.kalman</span> <span class="kn">import</span> <span class="n">KalmanFilter</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">linear_sum_assignment</span>
+
+<span class="kn">from</span> <span class="nn">ts_semantic_feature_detector.features_3d.camera</span> <span class="kn">import</span> <span class="n">StereoCamera</span>
+<span class="kn">from</span> <span class="nn">ts_semantic_feature_detector.features_3d.crop</span> <span class="kn">import</span> <span class="n">CornCrop</span>
+<span class="kn">from</span> <span class="nn">ts_semantic_feature_detector.features_3d.sequence</span> <span class="kn">import</span> <span class="n">AgriculturalSequence</span>
+
+<div class="viewcode-block" id="KalmanBoxTracker"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.tracking.KalmanBoxTracker">[docs]</a><span class="k">class</span> <span class="nc">KalmanBoxTracker</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implements a bounding box tracker with Kalman filter.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        crops (:obj:`list`): a list of :obj:`features_3d.crop.CornCrop`</span>
+<span class="sd">            that this tracker refers to.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    int: static attribute to give unique ID&#39;s to the trackers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">crop</span><span class="p">:</span> <span class="n">CornCrop</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize a box tracker.</span>
+
+<span class="sd">        TODO: update documentation about the state and action vectors.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            crop (:obj:`features_3d.crop.CornCrop`): the object containing</span>
+<span class="sd">                information about a single corn crop.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kf</span> <span class="o">=</span> <span class="n">KalmanFilter</span><span class="p">(</span><span class="n">dim_x</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">dim_z</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">dim_u</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># State transition matrix.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+            <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="p">])</span>
+
+        <span class="c1"># Control transition matrix.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="p">])</span>
+
+        <span class="c1"># Measurement function.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">H</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+            <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="p">])</span>
+
+        <span class="c1"># Process noise </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">Q</span><span class="p">[:,</span> <span class="p">:]</span> <span class="o">*=</span> <span class="mf">1e6</span>
+
+        <span class="c1"># Measurement noise</span>
+        <span class="c1"># Trust a lot position and displacement of matched detections.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">R</span> <span class="o">*=</span> <span class="mf">10e-6</span>
+        <span class="c1"># self.kf.R[:2, :2] *= 10e-3</span>
+        <span class="c1"># self.kf.R[4:-1, 4:-1] *= 10e-3</span>
+        <span class="c1"># Do not trust scale and ratio changes too much (original implementation).</span>
+        <span class="c1"># self.kf.R[2:4,2:4] *= 10.</span>
+        <span class="c1"># self.kf.R[-1, -1] *= 10.</span>
+
+        <span class="c1"># Covariance matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">P</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">1000.</span> <span class="c1"># High uncertainty to scale velocity.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">P</span> <span class="o">*=</span> <span class="mf">10.</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">x</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_bbox_to_z</span><span class="p">(</span><span class="n">crop</span><span class="o">.</span><span class="n">crop_box</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_since_update</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">KalmanBoxTracker</span><span class="o">.</span><span class="n">count</span>
+        <span class="n">KalmanBoxTracker</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hits</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hit_streak</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># Change crop cluster.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crops</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crops</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">crop</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crops</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">cluster</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+
+<div class="viewcode-block" id="KalmanBoxTracker._convert_bbox_to_z"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.tracking.KalmanBoxTracker._convert_bbox_to_z">[docs]</a>    <span class="k">def</span> <span class="nf">_convert_bbox_to_z</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">bbox</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts a bounding box in format [x1, y1, x2, y2] into [x, y, s, r].</span>
+
+<span class="sd">        The [x1, y1, x2, y2] is segmentation model output format for bounding</span>
+<span class="sd">        boxes, where (x1, y1) describes the top-left point and (x2, y2) the</span>
+<span class="sd">        bottom-right point. The [x, y, s, r] is the Kalman filter format, where</span>
+<span class="sd">        (x, y) describes the bounding box center coordinates, s is the bounding</span>
+<span class="sd">        box area and r is bounding box size ratio.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bbox: (:obj:`np.ndarray`): containing the crop bounding box.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            converted_data (:obj:`np.ndarray`): the bouding box data converted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">w</span><span class="o">/</span><span class="mf">2.</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">h</span><span class="o">/</span><span class="mf">2.</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">w</span> <span class="o">*</span> <span class="n">h</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">w</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">bbox</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">5</span><span class="p">]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">r</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span></div>
+    
+<div class="viewcode-block" id="KalmanBoxTracker._convert_x_to_bbox"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.tracking.KalmanBoxTracker._convert_x_to_bbox">[docs]</a>    <span class="k">def</span> <span class="nf">_convert_x_to_bbox</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span>
+        <span class="n">score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts a bounding box in format [x, y, s, r] into [x1, y1, x2, y2].</span>
+
+<span class="sd">        The [x1, y1, x2, y2] is segmentation model output format for bounding</span>
+<span class="sd">        boxes, where (x1, y1) describes the top-left point and (x2, y2) the</span>
+<span class="sd">        bottom-right point. The [x, y, s, r] is the Kalman filter format, where</span>
+<span class="sd">        (x, y) describes the bounding box center coordinates, s is the bounding</span>
+<span class="sd">        box area and r is bounding box size ratio.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (:obj:`list`): containing the bounding box data.</span>
+<span class="sd">            score (float, optional): containing the detection score.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            converted_data (:obj:`np.ndarray`): the bouding box data converted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="n">w</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">score</span><span class="o">==</span><span class="kc">None</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">w</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">h</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">w</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">h</span><span class="o">/</span><span class="mf">2.</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">w</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">h</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">w</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">h</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span><span class="n">score</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="KalmanBoxTracker.predict"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.tracking.KalmanBoxTracker.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">motion_2d_offset</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the Kalman filter predict step.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            motion_2d_offset: a :obj:`np.ndarray` containing the 2D motion offset</span>
+<span class="sd">                calculated from the extrinsics information.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            prediction (:obj:`np.ndarray`): the predicted bounding box.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Checks if the new predicted scale will be zero.</span>
+        <span class="c1"># If yes, ignores the scale improvement.</span>
+        <span class="k">if</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">0.0</span>
+
+        <span class="c1"># Advances the state vector informing the motion offset</span>
+        <span class="c1"># as the control action.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">motion_2d_offset</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">age</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Updates the time information</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_since_update</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hit_streak</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_since_update</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_convert_x_to_bbox</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+    
+<div class="viewcode-block" id="KalmanBoxTracker.update"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.tracking.KalmanBoxTracker.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">detection</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the Kalman filter correction step.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            detection (:obj:`np.ndarray`): the detected bounding box</span>
+<span class="sd">                in format [x1, y1, x2, y2].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_since_update</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hits</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hit_streak</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_convert_bbox_to_z</span><span class="p">(</span><span class="n">detection</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="KalmanBoxTracker.get_state"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.tracking.KalmanBoxTracker.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span>
+        <span class="bp">self</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the current bounding box estimate.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            state (:obj:`np.ndarray`): the current bounding box estimate.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_x_to_bbox</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kf</span><span class="o">.</span><span class="n">x</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="AgricultureSort"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.tracking.AgricultureSort">[docs]</a><span class="k">class</span> <span class="nc">AgricultureSort</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Modified SORT: A Simple, Online and Realtime Tracker.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        camera (features_3d.camera.StereoCamera): the camera object that</span>
+<span class="sd">            contains all the stereo camera information to project 3D points</span>
+<span class="sd">            back into the 2D plane.</span>
+<span class="sd">        max_age (int): the maximum number of frames to keep alive a track </span>
+<span class="sd">            without associated detections.</span>
+<span class="sd">        min_hits (int): the minimum number of associated detections before</span>
+<span class="sd">            track is initialised.</span>
+<span class="sd">        iou_threshold (float): the minimum IOU for match.</span>
+<span class="sd">        trackers (:obj:`list`): a list of :obj:`AgricultureTracker` objects.</span>
+<span class="sd">        frame_count (int): the current frame number.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">camera</span><span class="p">:</span> <span class="n">StereoCamera</span><span class="p">,</span>
+        <span class="n">max_age</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">min_hits</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">iou_threshold</span> <span class="o">=</span> <span class="mf">0.3</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the SORT object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            camera (features_3d.camera.StereoCamera): the camera object that</span>
+<span class="sd">                contains all stereo camera information to project 3D points </span>
+<span class="sd">                back into the 2D plane.</span>
+<span class="sd">            max_age (int, optional): the maximum number of frames to keep alive </span>
+<span class="sd">                a track without associated detections.</span>
+<span class="sd">            min_hits (int, optional): the minimum number of associated detections</span>
+<span class="sd">                before track is initialised.</span>
+<span class="sd">            iou_threshold (float, optional): the minimum IOU for match.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">camera</span> <span class="o">=</span> <span class="n">camera</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_age</span> <span class="o">=</span> <span class="n">max_age</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_hits</span> <span class="o">=</span> <span class="n">min_hits</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iou_threshold</span> <span class="o">=</span> <span class="n">iou_threshold</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">trackers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frame_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="AgricultureSort.step"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.tracking.AgricultureSort.step">[docs]</a>    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sequence</span><span class="p">:</span> <span class="n">AgriculturalSequence</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the tracker step.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sequence (:obj:`features_3d.agriculture.AgriculturalSequence`): the sequence</span>
+<span class="sd">                object that contains all the information about the scenes.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tracked_bbox (:obj:`np.ndarray`): containing the tracked bounding boxes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">frame_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Update crops with the 2D motion offset from extrinsics</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_crops_motion</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
+
+        <span class="c1"># Load information about the Kalman filter prediction step of existing trackers.</span>
+        <span class="c1"># Also checks if the prediction is valid. If not, saves the tracker index to</span>
+        <span class="c1"># remove it later. </span>
+        <span class="n">trackers_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="p">),</span> <span class="mi">5</span><span class="p">))</span>
+        <span class="n">to_delete_existing_trackers_idxs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">tracker_data</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trackers_data</span><span class="p">):</span>
+            <span class="n">prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">crops</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">estimated_motion_2d</span>
+            <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">tracker_data</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">prediction</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">prediction</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">prediction</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">prediction</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="mi">0</span>
+            <span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">prediction</span><span class="p">)):</span>
+                <span class="n">to_delete_existing_trackers_idxs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="c1"># Filter the extracted data from existing trackers.</span>
+        <span class="n">trackers_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">compress_rows</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_invalid</span><span class="p">(</span><span class="n">trackers_data</span><span class="p">))</span>
+
+        <span class="c1"># Filter the trackers that does not result in good</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">to_delete_existing_trackers_idxs</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="n">detections</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">crop</span><span class="o">.</span><span class="n">crop_box</span><span class="o">.</span><span class="n">data</span> <span class="k">for</span> <span class="n">crop</span> <span class="ow">in</span> <span class="n">sequence</span><span class="o">.</span><span class="n">scenes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">crop_group</span><span class="o">.</span><span class="n">crops</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">detections</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">detections</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+        <span class="n">matched</span><span class="p">,</span> <span class="n">unmatched_detections</span><span class="p">,</span> <span class="n">unmatched_trackers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_associate_detections_to_trackers</span><span class="p">(</span>
+            <span class="n">detections</span><span class="p">,</span>
+            <span class="n">trackers_data</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iou_threshold</span>
+        <span class="p">)</span>
+
+        <span class="c1"># For each founded correspondence, runs the Kalman filter correction step.</span>
+        <span class="c1"># Also adds the current crop to the tracker.</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">matched</span><span class="p">:</span>
+            <span class="n">last_box</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">crops</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">crop_box</span><span class="o">.</span><span class="n">data</span>
+            <span class="n">current_box</span> <span class="o">=</span> <span class="n">detections</span><span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">:]</span>
+            <span class="n">diff_2d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">current_box</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">last_box</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+            
+            <span class="n">observation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">current_box</span><span class="p">,</span> <span class="n">diff_2d</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">observation</span><span class="p">)</span>
+
+            <span class="c1"># Adds the crop to the tracker. </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">crops</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sequence</span><span class="o">.</span><span class="n">scenes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">crop_group</span><span class="o">.</span><span class="n">crops</span><span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">crops</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">cluster</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">id</span>
+
+        <span class="c1"># Create and initialise new trackers for unmatched detections.</span>
+        <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">unmatched_detections</span><span class="p">:</span>
+            <span class="n">tracker</span> <span class="o">=</span> <span class="n">KalmanBoxTracker</span><span class="p">(</span>
+                <span class="n">sequence</span><span class="o">.</span><span class="n">scenes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">crop_group</span><span class="o">.</span><span class="n">crops</span><span class="p">[</span><span class="n">u</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tracker</span><span class="p">)</span>
+
+        <span class="c1"># Filter the existing trackers by max_age and min_hits.</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">tracker</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">tracker</span><span class="o">.</span><span class="n">time_since_update</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">tracker</span><span class="o">.</span><span class="n">hit_streak</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_hits</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frame_count</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_hits</span><span class="p">):</span>
+                    <span class="n">d</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">get_state</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+                    <span class="c1"># # Modify the crop&#39;s clusters to match tracker ID.</span>
+                    <span class="c1"># for crop in tracker.crops:</span>
+                    <span class="c1">#     crop.cluster = tracker.id</span>
+
+                    <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+                            <span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="p">[</span><span class="n">tracker</span><span class="o">.</span><span class="n">id</span><span class="p">])</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="p">)</span> 
+                <span class="n">t</span> <span class="o">-=</span> <span class="mi">1</span>
+
+                <span class="k">if</span> <span class="n">tracker</span><span class="o">.</span><span class="n">time_since_update</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_age</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">trackers</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span></div>
+    
+<div class="viewcode-block" id="AgricultureSort._iou_batch"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.tracking.AgricultureSort._iou_batch">[docs]</a>    <span class="k">def</span> <span class="nf">_iou_batch</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">bb_test</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">bb_gt</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes the IOU metric between two bounding boxes in the form [x1, y1, x2, y2].</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bb_test (:obj:`np.ndarray`): the first bounding box.</span>
+<span class="sd">            bb_gt (:obj:`np.ndarray`): the second bounding box.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            iou_values (:obj:`np.ndarray`): containing the IOU metric from each </span>
+<span class="sd">                tracker/detection pair.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bb_gt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">bb_gt</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">bb_test</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">bb_test</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        
+        <span class="n">xx1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">bb_test</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">bb_gt</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">yy1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">bb_test</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">bb_gt</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="n">xx2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">bb_test</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">bb_gt</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+        <span class="n">yy2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">bb_test</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">bb_gt</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">xx2</span> <span class="o">-</span> <span class="n">xx1</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">yy2</span> <span class="o">-</span> <span class="n">yy1</span><span class="p">)</span>
+        <span class="n">wh</span> <span class="o">=</span> <span class="n">w</span> <span class="o">*</span> <span class="n">h</span>
+        <span class="n">o</span> <span class="o">=</span> <span class="n">wh</span> <span class="o">/</span> <span class="p">((</span><span class="n">bb_test</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">bb_test</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">bb_test</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">bb_test</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>                                      
+            <span class="o">+</span> <span class="p">(</span><span class="n">bb_gt</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">bb_gt</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">bb_gt</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">bb_gt</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="n">wh</span><span class="p">)</span>                                              
+        
+        <span class="k">return</span><span class="p">(</span><span class="n">o</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="AgricultureSort._linear_assignment"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.tracking.AgricultureSort._linear_assignment">[docs]</a>    <span class="k">def</span> <span class="nf">_linear_assignment</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">cost_matrix</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>          
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the best detection/trackers correspondence.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            cost_matrix (:obj:`np.ndarray`) containing negative IOU values</span>
+<span class="sd">                for each detection and tracker pair.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            matches (:obj:`np.ndarray`): each line indicates a correspondance </span>
+<span class="sd">                between the first column (detection) and the second one (tracker).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">linear_sum_assignment</span><span class="p">(</span><span class="n">cost_matrix</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="AgricultureSort._associate_detections_to_trackers"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.tracking.AgricultureSort._associate_detections_to_trackers">[docs]</a>    <span class="k">def</span> <span class="nf">_associate_detections_to_trackers</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">detections</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">trackers_data</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">iou_threshold</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Associates the detections to the existing trackers.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            detections (:obj:`np.ndarray`): the bounding boxes detected in</span>
+<span class="sd">                the current frame.</span>
+<span class="sd">            trackers_data (:obj:`np.ndarray`): the existing bounding boxes</span>
+<span class="sd">                from the existing trackers.</span>
+<span class="sd">            iou_threshold (float): the minimum IOU for match.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            matches (:obj:`np.ndarray`): the matches between detections and trackers.</span>
+<span class="sd">            unmatched_detections (:obj:`np.ndarray`): the unmatched detections.</span>
+<span class="sd">            unmatched trackers (:obj:`np.ndarray`): the unmatched trackers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If there is not any tracker yet, just return all detections</span>
+        <span class="c1"># as unmatched ones.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">trackers_data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">matched</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">unmatched_detections</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">detections</span><span class="p">))</span>
+            <span class="n">unmatched_trackers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">matched</span><span class="p">,</span> <span class="n">unmatched_detections</span><span class="p">,</span> <span class="n">unmatched_trackers</span>
+        
+        <span class="c1"># If there are already some trackers, check their IOU metric</span>
+        <span class="c1"># with the provided detections</span>
+        <span class="n">iou_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iou_batch</span><span class="p">(</span><span class="n">detections</span><span class="p">,</span> <span class="n">trackers_data</span><span class="p">)</span>
+
+        <span class="n">matched_idxs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># Checks if there are detections and trackers overlapping</span>
+        <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="n">iou_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="n">iou_matrix</span> <span class="o">&gt;</span> <span class="n">iou_threshold</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+            <span class="c1"># Checks if there is only one good detection and tracker correspondence.</span>
+            <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">a</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">matched_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># If not, try to find the better correspondence with Jonker-Volgenant algorithm.</span>
+                <span class="n">matched_idxs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_linear_assignment</span><span class="p">(</span><span class="o">-</span><span class="n">iou_matrix</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If not, just return a empty Numpy array.</span>
+            <span class="n">matched_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+        <span class="c1"># Finds the the detections that don&#39;t have a tracker correspondence.</span>
+        <span class="n">unmatched_detections</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">detection</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">detections</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">d</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">matched_idxs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]:</span>
+                <span class="n">unmatched_detections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+        <span class="c1"># Finds the the trackers that don&#39;t have a detection correspondence.</span>
+        <span class="n">unmatched_trackers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">tracker</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trackers_data</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">matched_idxs</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]:</span>
+                <span class="n">unmatched_trackers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="n">matches</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">matched_idxs</span><span class="p">:</span>
+            <span class="c1">#Filters the matches that have low IOU (when linear_assignment was used)</span>
+            <span class="k">if</span> <span class="n">iou_matrix</span><span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">&lt;</span> <span class="n">iou_threshold</span><span class="p">:</span>
+                <span class="n">unmatched_detections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">unmatched_trackers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">matches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">matches</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">matches</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">matches</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">matches</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">unmatched_detections</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">unmatched_trackers</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AgricultureSort.get_crops_motion"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.tracking.AgricultureSort.get_crops_motion">[docs]</a>    <span class="k">def</span> <span class="nf">get_crops_motion</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sequence</span><span class="p">:</span> <span class="n">AgriculturalSequence</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates a prediction of the crop&#39;s position using extrinsics information.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sequence (:obj:`features_3d.sequence.AgriculturalSequence`): object that</span>
+<span class="sd">                contains all the crop information during several scenes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="o">.</span><span class="n">scenes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">current_scene</span> <span class="o">=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">scenes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">prev_scene</span> <span class="o">=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">scenes</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+
+            <span class="c1"># Get the transformation between the two consecutive scenes and converts it back to origin frame.</span>
+            <span class="n">shift_transform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">current_scene</span><span class="o">.</span><span class="n">extrinsics</span><span class="p">)</span> <span class="o">@</span> <span class="n">current_scene</span><span class="o">.</span><span class="n">extrinsics</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">prev_scene</span><span class="o">.</span><span class="n">extrinsics</span><span class="p">)</span>
+
+            <span class="c1"># print(&#39;self.camera.size = &#39;, self.camera.size)</span>
+
+            <span class="c1"># For each crop in the previous scene, apply the transformation in the average point.</span>
+            <span class="c1"># Calculates the difference between the previous average point with the transformed one.</span>
+            <span class="c1"># Project this difference back into the 2D image plane.</span>
+            <span class="k">for</span> <span class="n">prev_crop</span> <span class="ow">in</span> <span class="n">prev_scene</span><span class="o">.</span><span class="n">crop_group</span><span class="o">.</span><span class="n">crops</span><span class="p">:</span>
+                <span class="c1"># Apply the shift to the average point</span>
+                <span class="n">shifted_avg_point</span> <span class="o">=</span> <span class="n">shift_transform</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prev_crop</span><span class="o">.</span><span class="n">average_point</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">shifted_2d_point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">get_2d_point</span><span class="p">(</span><span class="n">shifted_avg_point</span><span class="p">)</span>
+
+                <span class="c1"># print(&#39;prev_crop.average_point = &#39;, prev_crop.average_point)</span>
+                <span class="c1"># print(&#39;shifted_avg_point = &#39;, shifted_avg_point)</span>
+                <span class="c1"># print(&#39;shifted_2d_point = &#39;, shifted_2d_point)</span>
+                
+                <span class="n">prev_box</span> <span class="o">=</span> <span class="n">prev_crop</span><span class="o">.</span><span class="n">crop_box</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">box_center_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">([</span><span class="n">prev_box</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">prev_box</span><span class="p">[</span><span class="mi">2</span><span class="p">]])</span>
+                <span class="n">box_center_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">([</span><span class="n">prev_box</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">prev_box</span><span class="p">[</span><span class="mi">3</span><span class="p">]])</span>
+                <span class="n">box_center</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">box_center_x</span><span class="p">,</span> <span class="n">box_center_y</span><span class="p">])</span>
+
+                <span class="c1"># print(&#39;box_center = &#39;, box_center)</span>
+
+                <span class="n">diff_2d</span> <span class="o">=</span> <span class="n">shifted_2d_point</span> <span class="o">-</span> <span class="n">box_center</span>
+                <span class="n">prev_crop</span><span class="o">.</span><span class="n">estimated_motion_2d</span> <span class="o">=</span> <span class="n">diff_2d</span>
+                <span class="c1"># print(&#39;diff_2d = &#39;, diff_2d)</span>
+
+                <span class="c1"># Correcting direction of the movement.</span>
+                <span class="c1"># prev_box = prev_crop.crop_box.data</span>
+                <span class="c1"># if box_center[0] &gt; self.camera.size[0]/2:</span>
+                <span class="c1">#     prev_crop.estimated_motion_2d[0] *= -1.</span>
+
+                <span class="c1"># Forces the array to be 2D to avoid problems when doing matrix multiplication.</span>
+                <span class="n">prev_crop</span><span class="o">.</span><span class="n">estimated_motion_2d</span> <span class="o">=</span> <span class="n">prev_crop</span><span class="o">.</span><span class="n">estimated_motion_2d</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lucas Toschi.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ts_semantic_feature_detector.features_2d.detections &mdash; ts_semantic_feature_detector 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ts_semantic_feature_detector
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">ts_semantic_feature_detector</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ts_semantic_feature_detector</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ts_semantic_feature_detector.features_2d.detections</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ts_semantic_feature_detector.features_2d.detections</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Encapsulates functions that deal with the detection of features in 2D images.</span>
+
+<span class="sd">It&#39;s only necessary to apply filtering simultaneously to the masks and boxes.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+
+<span class="kn">from</span> <span class="nn">ts_semantic_feature_detector.features_2d.boxes</span> <span class="kn">import</span> <span class="n">BoxGroup</span>
+<span class="kn">from</span> <span class="nn">ts_semantic_feature_detector.features_2d.masks</span> <span class="kn">import</span> <span class="n">Mask</span>
+<span class="kn">from</span> <span class="nn">ts_semantic_feature_detector.features_2d.masks</span> <span class="kn">import</span> <span class="n">MaskGroup</span>
+
+<div class="viewcode-block" id="DetectionGroup"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.detections.DetectionGroup">[docs]</a><span class="k">class</span> <span class="nc">DetectionGroup</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Agroup masks and stems groups to do filtering. </span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        boxes (:obj:`features_2d.boxes.BoxGroup`): the detected boxes group.</span>
+<span class="sd">        masks (:obj:`features_2d.boxes.MaskGroup`): the detected masks group.</span>
+<span class="sd">        scores (:obj:`np.ndarray`): the inference scores.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">boxes</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">masks</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">scores</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">binary_threshold</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a single detection.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            boxes (:obj:`np.ndarray`): the masks with shape (num_boxes, 4). </span>
+<span class="sd">                This is the same format outputted by the Mask RCNN network.</span>
+<span class="sd">            masks (:obj:`np.ndarray`): the masks with shape </span>
+<span class="sd">                (num_masks, color_channel, height, width). This is the same</span>
+<span class="sd">                format outputted by the Mask RCNN network.</span>
+<span class="sd">            scores (:obj:`np.ndarray`): the inference scores provided by</span>
+<span class="sd">                the network. Masks and scores must be at the same corresponding</span>
+<span class="sd">                order.</span>
+<span class="sd">            binary_threshold (float): the threshold with the masks will be </span>
+<span class="sd">                binarized. Binary masks are extensively used in this project, </span>
+<span class="sd">                so this argument is mandatory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">box_group</span> <span class="o">=</span> <span class="n">BoxGroup</span><span class="p">(</span><span class="n">boxes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span> <span class="o">=</span> <span class="n">MaskGroup</span><span class="p">(</span><span class="n">masks</span><span class="p">,</span> <span class="n">binary_threshold</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scores</span> <span class="o">=</span> <span class="n">scores</span>
+
+<div class="viewcode-block" id="DetectionGroup.is_empty"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.detections.DetectionGroup.is_empty">[docs]</a>    <span class="k">def</span> <span class="nf">is_empty</span><span class="p">(</span>
+        <span class="bp">self</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the detection group is empty.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            is_empty (bool): True if the detection group is empty, False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="DetectionGroup.metric_filtering"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.detections.DetectionGroup.metric_filtering">[docs]</a>    <span class="k">def</span> <span class="nf">metric_filtering</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">score_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">percentage</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Filter the detection group by some metric.</span>
+
+<span class="sd">        It discards the masks, boxes and scores considered worst.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            type (str): the type of metric that will be used to filter the group. </span>
+<span class="sd">                It can be &#39;score&#39; or &#39;percentage&#39;. The first one will filter the</span>
+<span class="sd">                group by an arbitrary score threshold value. The second will filter</span>
+<span class="sd">                the group to remain only the best provided percentage of masks.</span>
+<span class="sd">            score_threshold (float, optional): threshold value at interval [0, 1]. </span>
+<span class="sd">                Masks with scores below this threshold are deleted.</span>
+<span class="sd">            percentage (float, optional): threshold value at interval [0, 1].</span>
+<span class="sd">                It determines the percentage of best masks that are desired.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span> <span class="o">==</span> <span class="s1">&#39;score&#39;</span><span class="p">:</span>
+            <span class="n">idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scores</span> <span class="o">&lt;</span> <span class="n">score_threshold</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scores</span><span class="p">,</span> <span class="n">idxs</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">idxs</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">box_group</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                <span class="n">idxs</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="nb">type</span> <span class="o">==</span> <span class="s1">&#39;percentage&#39;</span><span class="p">:</span>
+            <span class="n">num_predictions</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">masks</span><span class="p">)</span><span class="o">*</span><span class="n">percentage</span><span class="p">)</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">num_predictions</span><span class="p">:]</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">box_group</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">num_predictions</span><span class="p">:]</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scores</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_predictions</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scores</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="DetectionGroup.filter_redundancy"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_2d.html#ts_semantic_feature_detector.features_2d.detections.DetectionGroup.filter_redundancy">[docs]</a>    <span class="k">def</span> <span class="nf">filter_redundancy</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">x_coordinate_threshold</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Filter the detections that represents the same crop.</span>
+
+<span class="sd">        The filtering follows these steps:</span>
+
+<span class="sd">        1. Finds the appropriate curves to describe each mask. </span>
+<span class="sd">        For more information about how the curves are obtained,</span>
+<span class="sd">        please refer to the features2d.Mask.extract_curves method </span>
+<span class="sd">        documentation.</span>
+
+<span class="sd">        2. Finds the X coordinate where the obtained line intercepts</span>
+<span class="sd">        the bottom part of the image.</span>
+
+<span class="sd">        3. Applies a threshold on the distance between consecutive X</span>
+<span class="sd">        coordinates. Masks that have this coordinate too close are</span>
+<span class="sd">        merged and their curves are calculated again. </span>
+
+<span class="sd">        TODO: Throw an exception when no detections are informed.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x_coordinate_threshold (float): the threshold to be applied to</span>
+<span class="sd">                the distances between lines&#39; X coordinates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scores</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">mask</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="c1"># Garantees that the filtering is done only after the curves</span>
+                <span class="c1"># are extracted.</span>
+                <span class="k">if</span> <span class="n">mask</span><span class="o">.</span><span class="n">ransac_line</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">mask</span><span class="o">.</span><span class="n">extract_curves</span><span class="p">()</span>
+                
+                <span class="n">mask</span><span class="o">.</span><span class="n">x_bottom</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">ransac_line</span><span class="o">.</span><span class="n">evaluate_line_at_y</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="c1"># Sorts the masks and the corresponding boxes using the x_bottom property as the key.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">box_group</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="o">*</span><span class="nb">sorted</span><span class="p">(</span>
+                    <span class="nb">zip</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">box_group</span><span class="o">.</span><span class="n">data</span>
+                    <span class="p">),</span>
+                    <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">det</span><span class="p">:</span> <span class="n">det</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">x_bottom</span> 
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">box_group</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">box_group</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+            <span class="c1"># Gets the x_bottom values and calculates the distance between them. Finds the indices</span>
+            <span class="c1"># that are smaller than the threshold.</span>
+            <span class="n">xs_bottom</span> <span class="o">=</span> <span class="p">[</span><span class="n">mask</span><span class="o">.</span><span class="n">x_bottom</span> <span class="k">for</span> <span class="n">mask</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">]</span>
+            <span class="n">dist_between_x_bottom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xs_bottom</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xs_bottom</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+            <span class="n">dist_between_x_bottom_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">dist_between_x_bottom</span> <span class="o">&lt;</span> <span class="n">x_coordinate_threshold</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            
+            <span class="c1"># Iterate over all redundant bottom_x points</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">dist_between_x_bottom_idx</span><span class="p">:</span>
+                <span class="n">combined_mask_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">binary_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">binary_threshold</span>
+                
+                <span class="c1"># Converts the combined mask to the output inference shape.</span>
+                <span class="c1"># Allows to use the default Mask constructor. </span>
+                <span class="n">combined_mask_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">combined_mask_data</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">Mask</span><span class="p">(</span><span class="n">combined_mask_data</span><span class="p">,</span> <span class="n">binary_threshold</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">extract_curves</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scores</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scores</span><span class="p">[</span><span class="n">idx</span><span class="p">:</span><span class="n">idx</span><span class="o">+</span><span class="mi">2</span><span class="p">])</span>
+
+                <span class="c1"># Delete the redundant detection (mask and box).</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scores</span><span class="p">,</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_group</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">box_group</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="n">dist_between_x_bottom_idx</span> <span class="o">-=</span> <span class="mi">1</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lucas Toschi.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

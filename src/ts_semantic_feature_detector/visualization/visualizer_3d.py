@@ -1,4 +1,5 @@
 """
+Implements 3D visualizations using Plotly library.
 """
 
 import typing as List
@@ -13,19 +14,21 @@ class Visualizer3D:
     def __init__(
         self,
         data: List = None
-    ) -> None:
+    ):
         """
         Initializes the Visualizer3D.
 
         Args:
-            data: a list containing existing plots.
+            data (:obj:`list`): the existing plots.
         """
 
         self.data = []
         if data is not None:
             self.data = data
 
-    def show(self):
+    def show(
+        self
+    ) -> None:
         """
         Shows the previously configured plots.
         """

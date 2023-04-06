@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ts_semantic_feature_detector.input_utils.loaders.sync_loader &mdash; ts_semantic_feature_detector 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            ts_semantic_feature_detector
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">ts_semantic_feature_detector</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">ts_semantic_feature_detector</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ts_semantic_feature_detector.input_utils.loaders.sync_loader</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ts_semantic_feature_detector.input_utils.loaders.sync_loader</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This implements a class to load and synchronize data from rosbags and SVO files.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Generator</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+
+<span class="kn">from</span> <span class="nn">ts_semantic_feature_detector.input_utils.loaders.rosbags</span> <span class="kn">import</span> <span class="n">RosbagLoader</span>
+<span class="kn">from</span> <span class="nn">ts_semantic_feature_detector.input_utils.loaders.svo_zed</span> <span class="kn">import</span> <span class="n">SVOZedLoader</span>
+
+<div class="viewcode-block" id="SynchronizedLoader"><a class="viewcode-back" href="../../../../ts_semantic_feature_detector.input_utils.loaders.html#ts_semantic_feature_detector.input_utils.loaders.sync_loader.SynchronizedLoader">[docs]</a><span class="k">class</span> <span class="nc">SynchronizedLoader</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implements loading and synchronizing data from rosbags and SVO files.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        data_path (str): the path to the the upper folder where the compressed</span>
+<span class="sd">            and the extracted data are storaged.</span>
+<span class="sd">        data (a dict [str, np.ndarray]): all the data from the extracted files.</span>
+<span class="sd">            Images still need to be loaded.</span>
+<span class="sd">        times (a dict [str, np.ndarray]): all the data timestamps from the</span>
+<span class="sd">            extracted files.  </span>
+<span class="sd">        low_freq_topic (str): the topic with the least amount of data. It is used</span>
+<span class="sd">            to synchronize the others.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_path</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the loader.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data_path (str): the path to the the upper folder where the compressed</span>
+<span class="sd">                and the extracted data are storaged. It is expected a folder arrangement</span>
+<span class="sd">                similar to:</span>
+
+<span class="sd">                /data</span>
+<span class="sd">                    /rosbag</span>
+<span class="sd">                        /ekf</span>
+<span class="sd">                            - ekf.csv file</span>
+<span class="sd">                        /imu</span>
+<span class="sd">                            - imu.csv file</span>
+<span class="sd">                    /svo</span>
+<span class="sd">                        /depth</span>
+<span class="sd">                            - PNG images</span>
+<span class="sd">                        /rgb</span>
+<span class="sd">                            - PNG images</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">=</span> <span class="n">data_path</span>
+        <span class="n">rosbag_loader</span> <span class="o">=</span> <span class="n">RosbagLoader</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span>
+        <span class="n">svo_loader</span> <span class="o">=</span> <span class="n">SVOZedLoader</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;ekf&#39;</span><span class="p">:</span> <span class="n">rosbag_loader</span><span class="o">.</span><span class="n">ekf</span><span class="p">,</span>
+            <span class="s1">&#39;imu&#39;</span><span class="p">:</span> <span class="n">rosbag_loader</span><span class="o">.</span><span class="n">imu</span><span class="p">,</span>
+            <span class="s1">&#39;rgb&#39;</span><span class="p">:</span> <span class="n">svo_loader</span><span class="o">.</span><span class="n">rgb_imgs</span><span class="p">,</span>
+            <span class="s1">&#39;depth&#39;</span><span class="p">:</span> <span class="n">svo_loader</span><span class="o">.</span><span class="n">depth_imgs</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">times</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;ekf&#39;</span><span class="p">:</span> <span class="n">rosbag_loader</span><span class="o">.</span><span class="n">ekf_times</span><span class="p">,</span>
+            <span class="s1">&#39;imu&#39;</span><span class="p">:</span> <span class="n">rosbag_loader</span><span class="o">.</span><span class="n">imu_times</span><span class="p">,</span>
+            <span class="s1">&#39;rgb&#39;</span><span class="p">:</span> <span class="n">svo_loader</span><span class="o">.</span><span class="n">rgb_times</span><span class="p">,</span>
+            <span class="s1">&#39;depth&#39;</span><span class="p">:</span> <span class="n">svo_loader</span><span class="o">.</span><span class="n">depth_times</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">low_freq_topic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_low_freq_topic</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SynchronizedLoader._get_low_freq_topic"><a class="viewcode-back" href="../../../../ts_semantic_feature_detector.input_utils.loaders.html#ts_semantic_feature_detector.input_utils.loaders.sync_loader.SynchronizedLoader._get_low_freq_topic">[docs]</a>    <span class="k">def</span> <span class="nf">_get_low_freq_topic</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">times</span><span class="p">:</span> <span class="n">Dict</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the low frequency topic from all sources.</span>
+
+<span class="sd">        Finds the low frequency topic by checking the size of the</span>
+<span class="sd">        timestamp Numpy array. This topic will be used as the step</span>
+<span class="sd">        for synchronize the others.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            times (a dict [str, np.ndarray]): the timestamps of each topic.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">time_sizes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">times</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">time_sizes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">time_sizes</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">time_sizes</span><span class="o">.</span><span class="n">get</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SynchronizedLoader.get_sync_data"><a class="viewcode-back" href="../../../../ts_semantic_feature_detector.input_utils.loaders.html#ts_semantic_feature_detector.input_utils.loaders.sync_loader.SynchronizedLoader.get_sync_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_sync_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">skip_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Yields the rosbag and svo data synchronized.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            skip_frames (int): the desired amount of frames that </span>
+<span class="sd">                will be skipped at the start.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">low_freq_times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">low_freq_topic</span><span class="p">]</span>
+
+        <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># For each instance of the low frequency topic</span>
+        <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">low_freq_times</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">skip_frames</span><span class="p">:</span>
+                <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">continue</span>
+
+            <span class="n">best_fit_data</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="c1"># Look for the best data that has the best time fit.</span>
+            <span class="k">for</span> <span class="n">topic</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">best_time_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="n">topic</span><span class="p">]</span> <span class="o">-</span> <span class="n">time</span><span class="p">))</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+
+                <span class="c1"># If the topic is a image, load it.</span>
+                <span class="k">if</span> <span class="n">topic</span> <span class="o">==</span> <span class="s1">&#39;rgb&#39;</span> <span class="ow">or</span> <span class="n">topic</span> <span class="o">==</span> <span class="s1">&#39;depth&#39;</span><span class="p">:</span>
+                    <span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">+</span> <span class="s1">&#39;/svo/&#39;</span> <span class="o">+</span> <span class="n">topic</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">topic</span><span class="p">][</span><span class="n">best_time_idx</span><span class="p">]</span>
+                    <span class="p">)</span>
+                    <span class="n">best_fit_data</span><span class="p">[</span><span class="n">topic</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">best_fit_data</span><span class="p">[</span><span class="n">topic</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">topic</span><span class="p">][</span><span class="n">best_time_idx</span><span class="p">]</span>
+
+            <span class="n">best_fit_data</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">index</span>
+            <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">yield</span> <span class="n">best_fit_data</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Lucas Toschi.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

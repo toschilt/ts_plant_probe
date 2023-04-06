@@ -1,3 +1,7 @@
+"""
+Implements basic color returns for clustering.
+"""
+
 import matplotlib.colors as mcolors
 
 def get_color_from_cluster(cluster):
