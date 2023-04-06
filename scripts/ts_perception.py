@@ -156,7 +156,7 @@ class TerraSentiaPerception:
                     detections,
                     self.camera,
                     data['depth'],
-                    mask_filter_threshold=2,
+                    depth_neighbors=2,
                     ground_plane=gp
                 )
                 self.timer.stop('corn_crop_group')
@@ -200,10 +200,10 @@ class TerraSentiaPerception:
                 sequence.remove_old_scenes(max_age=200)
                 self.timer.stop('remove_old_scenes')
 
-                rospy.loginfo('Writing times...')
-                self.output_writer.write_times(self.timer)
+                # rospy.loginfo('Writing times...')
+                # self.output_writer.write_times(self.timer)
 
-            # if sequence.scenes:
+            if sequence.scenes:
             #     rospy.loginfo('Plotting...')
 
             #     self.plot_tracking(
@@ -214,12 +214,12 @@ class TerraSentiaPerception:
             #         save_fig=False
             #     )
                 
-            #     self.plot_3d(
-            #         data,
-            #         sequence,
-            #         v_3d,
-            #         see_sequence=see_sequence
-            #     )
+                self.plot_3d(
+                    data,
+                    sequence,
+                    v_3d,
+                    see_sequence=see_sequence
+                )
 
     def plot_tracking(
         self, 
