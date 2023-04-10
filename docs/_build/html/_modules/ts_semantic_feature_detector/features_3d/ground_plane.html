@@ -79,6 +79,7 @@
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+<span class="kn">import</span> <span class="nn">open3d</span> <span class="k">as</span> <span class="nn">o3d</span>
 <span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
 <span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
 <span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">PCA</span>
@@ -375,6 +376,28 @@
               <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">coeficients</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">z</span> 
               <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">coeficients</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">coeficients</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span></div>
+    
+<div class="viewcode-block" id="GroundPlane.downsample"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_3d.html#ts_semantic_feature_detector.features_3d.ground_plane.GroundPlane.downsample">[docs]</a>    <span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">voxel_size</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Downsample the 3D point cloud using the voxel grid method.</span>
+
+<span class="sd">        The downsampled point cloud is stored in the class attribute &#39;ps_3d&#39;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            voxel_size (float): the voxel size.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            downsampled_data (:obj:`np.ndarray`): the downsampled 3D point cloud.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pcd</span> <span class="o">=</span> <span class="n">o3d</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">PointCloud</span><span class="p">()</span>
+        <span class="n">pcd</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">o3d</span><span class="o">.</span><span class="n">utility</span><span class="o">.</span><span class="n">Vector3dVector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ps_3d</span><span class="p">)</span>
+        <span class="n">downsampled_pcd</span> <span class="o">=</span> <span class="n">pcd</span><span class="o">.</span><span class="n">voxel_down_sample</span><span class="p">(</span><span class="n">voxel_size</span><span class="o">=</span><span class="n">voxel_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ps_3d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">downsampled_pcd</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ps_3d</span></div>
 
 <div class="viewcode-block" id="GroundPlane.plot"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_3d.html#ts_semantic_feature_detector.features_3d.ground_plane.GroundPlane.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>   

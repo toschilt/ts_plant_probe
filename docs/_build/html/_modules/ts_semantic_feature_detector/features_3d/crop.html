@@ -76,6 +76,7 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+<span class="kn">import</span> <span class="nn">open3d</span> <span class="k">as</span> <span class="nn">o3d</span>
 <span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
 <span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">PCA</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -285,6 +286,28 @@
 
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">])</span></div>
     
+<div class="viewcode-block" id="CornCrop.downsample"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_3d.html#ts_semantic_feature_detector.features_3d.crop.CornCrop.downsample">[docs]</a>    <span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">voxel_size</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Downsample the 3D point cloud using the voxel grid method.</span>
+
+<span class="sd">        The downsampled point cloud is stored in the class attribute &#39;ps_3d&#39;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            voxel_size (float): the voxel size.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            downsampled_data (:obj:`np.ndarray`): the downsampled 3D point cloud.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pcd</span> <span class="o">=</span> <span class="n">o3d</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">PointCloud</span><span class="p">()</span>
+        <span class="n">pcd</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">o3d</span><span class="o">.</span><span class="n">utility</span><span class="o">.</span><span class="n">Vector3dVector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ps_3d</span><span class="p">)</span>
+        <span class="n">downsampled_pcd</span> <span class="o">=</span> <span class="n">pcd</span><span class="o">.</span><span class="n">voxel_down_sample</span><span class="p">(</span><span class="n">voxel_size</span><span class="o">=</span><span class="n">voxel_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ps_3d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">downsampled_pcd</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ps_3d</span></div>
+    
 <div class="viewcode-block" id="CornCrop.plot_depth_histogram"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_3d.html#ts_semantic_feature_detector.features_3d.crop.CornCrop.plot_depth_histogram">[docs]</a>    <span class="k">def</span> <span class="nf">plot_depth_histogram</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">rgb_img</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
@@ -484,6 +507,19 @@
                 <span class="n">crop</span><span class="o">.</span><span class="n">emerging_point_local_frame</span> <span class="o">=</span> <span class="n">crop</span><span class="o">.</span><span class="n">emerging_point</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">crops</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">crop</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CornCropGroup.downsample"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_3d.html#ts_semantic_feature_detector.features_3d.crop.CornCropGroup.downsample">[docs]</a>    <span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">factor</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Downsample the corn crops.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            factor (int): the downsampling factor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">crop</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">crops</span><span class="p">:</span>
+            <span class="n">crop</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CornCropGroup.plot_depth_histograms"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_3d.html#ts_semantic_feature_detector.features_3d.crop.CornCropGroup.plot_depth_histograms">[docs]</a>    <span class="k">def</span> <span class="nf">plot_depth_histograms</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>

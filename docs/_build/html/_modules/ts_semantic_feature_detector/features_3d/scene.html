@@ -110,6 +110,28 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">extrinsics</span> <span class="o">=</span> <span class="n">extrinsics</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="mi">0</span>
 
+<div class="viewcode-block" id="AgriculturalScene.downsample"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_3d.html#ts_semantic_feature_detector.features_3d.scene.AgriculturalScene.downsample">[docs]</a>    <span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">crop_voxel_size</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">ground_plane_voxel_size</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Downsamples the scene pointclouds with the voxel grid method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            crop_voxel_size (float): the voxel size to be used in the crop</span>
+<span class="sd">                pointcloud. If it is None, the crop pointcloud will not be</span>
+<span class="sd">                downsampled.</span>
+<span class="sd">            ground_plane_voxel_size (float): the voxel size to be used in the</span>
+<span class="sd">                ground plane pointcloud. If it is None, the ground plane</span>
+<span class="sd">                pointcloud will not be downsampled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">crop_voxel_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">crop_group</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">crop_voxel_size</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ground_plane_voxel_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ground_plane</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">ground_plane_voxel_size</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="AgriculturalScene._apply_extrinsics_to_3D_vector"><a class="viewcode-back" href="../../../ts_semantic_feature_detector.features_3d.html#ts_semantic_feature_detector.features_3d.scene.AgriculturalScene._apply_extrinsics_to_3D_vector">[docs]</a>    <span class="k">def</span> <span class="nf">_apply_extrinsics_to_3D_vector</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">vector_3d</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
