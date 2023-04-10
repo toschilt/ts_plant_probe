@@ -166,13 +166,13 @@ class TerraSentiaPerception:
                 scene = AgriculturalScene(crop_group, gp)
                 self.timer.stop('scene')
 
-                # rospy.loginfo('Downsampling point clouds...')
-                # self.timer.start('downsample_scene')
-                # scene.downsample(
-                #     crop_voxel_size=0.05,
-                #     ground_plane_voxel_size=0.01
-                # )
-                # self.timer.stop('downsample_scene')
+                rospy.loginfo('Downsampling point clouds...')
+                self.timer.start('downsample_scene')
+                scene.downsample(
+                    crop_voxel_size=0.05,
+                    ground_plane_voxel_size=0.01
+                )
+                self.timer.stop('downsample_scene')
 
                 rospy.loginfo('Adding extrinsics to the 3D points...')
                 self.timer.start('add_extrinsics_information')
