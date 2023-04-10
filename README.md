@@ -15,6 +15,7 @@ This repository contains a ROS package that implements a semantic feature detect
   - ```cv2```
   - ```matplotlib```
   - ```numpy```
+  - ```open3d```
   - ```PIL```
   - ```plotly```
   - ```pycocotools```
