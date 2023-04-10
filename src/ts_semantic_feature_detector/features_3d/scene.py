@@ -40,6 +40,28 @@ class AgriculturalScene:
         self.extrinsics = extrinsics
         self.age = 0
 
+    def downsample(
+        self, 
+        crop_voxel_size: float,
+        ground_plane_voxel_size: float
+    ) -> None:
+        """
+        Downsamples the scene pointclouds with the voxel grid method.
+
+        Args:
+            crop_voxel_size (float): the voxel size to be used in the crop
+                pointcloud. If it is None, the crop pointcloud will not be
+                downsampled.
+            ground_plane_voxel_size (float): the voxel size to be used in the
+                ground plane pointcloud. If it is None, the ground plane
+                pointcloud will not be downsampled.
+        """
+        if crop_voxel_size is not None:
+            self.crop_group.downsample(crop_voxel_size)
+
+        if ground_plane_voxel_size is not None:
+            self.ground_plane.downsample(ground_plane_voxel_size)
+
     def _apply_extrinsics_to_3D_vector(
         self,
         vector_3d: npt.ArrayLike,

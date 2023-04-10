@@ -6,6 +6,7 @@ from typing import Tuple, List
 
 import numpy as np
 import numpy.typing as npt
+import open3d as o3d
 from PIL import Image
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
@@ -215,6 +216,28 @@ class CornCrop:
 
         return np.array([theta, phi])
     
+    def downsample(
+        self,
+        voxel_size: float
+    ) -> npt.ArrayLike:
+        """
+        Downsample the 3D point cloud using the voxel grid method.
+
+        The downsampled point cloud is stored in the class attribute 'ps_3d'.
+
+        Args:
+            voxel_size (float): the voxel size.
+
+        Returns:
+            downsampled_data (:obj:`np.ndarray`): the downsampled 3D point cloud.
+        """
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(self.ps_3d)
+        downsampled_pcd = pcd.voxel_down_sample(voxel_size=voxel_size)
+        self.ps_3d = np.asarray(downsampled_pcd.points)
+
+        return self.ps_3d
+    
     def plot_depth_histogram(
         self,
         rgb_img: npt.ArrayLike,
@@ -414,6 +437,19 @@ class CornCropGroup:
                 crop.emerging_point_local_frame = crop.emerging_point
 
             self.crops.append(crop)
+
+    def downsample(
+        self,
+        factor: int
+    ) -> None:
+        """
+        Downsample the corn crops.
+
+        Args:
+            factor (int): the downsampling factor.
+        """
+        for crop in self.crops:
+            crop.downsample(factor)
 
     def plot_depth_histograms(
         self,

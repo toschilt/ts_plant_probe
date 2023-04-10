@@ -9,6 +9,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
+import open3d as o3d
 from PIL import Image
 import plotly.graph_objects as go
 from sklearn.decomposition import PCA
@@ -305,6 +306,28 @@ class GroundPlane:
               + self.coeficients[2]*z 
               + self.coeficients[3])/self.coeficients[1]
         return x, y, z
+    
+    def downsample(
+        self,
+        voxel_size: float
+    ) -> npt.ArrayLike:
+        """
+        Downsample the 3D point cloud using the voxel grid method.
+
+        The downsampled point cloud is stored in the class attribute 'ps_3d'.
+
+        Args:
+            voxel_size (float): the voxel size.
+
+        Returns:
+            downsampled_data (:obj:`np.ndarray`): the downsampled 3D point cloud.
+        """
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(self.ps_3d)
+        downsampled_pcd = pcd.voxel_down_sample(voxel_size=voxel_size)
+        self.ps_3d = np.asarray(downsampled_pcd.points)
+
+        return self.ps_3d
 
     def plot(
         self,   
