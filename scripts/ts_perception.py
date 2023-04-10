@@ -127,7 +127,7 @@ class TerraSentiaPerception:
             )
             detections.metric_filtering('score', score_threshold=0.5)
             detections.filter_redundancy(x_coordinate_threshold=20)
-            self.timer.stop('inference')
+            self.timer.stop('detections')
 
             # Check if there are any valid detections.
             if not detections.is_empty():
@@ -161,11 +161,20 @@ class TerraSentiaPerception:
                 )
                 self.timer.stop('corn_crop_group')
 
-                rospy.loginfo('Adding extrinsics to the 3D points...')
+                rospy.loginfo('Getting the agricultural scene...')
                 self.timer.start('scene')
                 scene = AgriculturalScene(crop_group, gp)
                 self.timer.stop('scene')
 
+                # rospy.loginfo('Downsampling point clouds...')
+                # self.timer.start('downsample_scene')
+                # scene.downsample(
+                #     crop_voxel_size=0.05,
+                #     ground_plane_voxel_size=0.01
+                # )
+                # self.timer.stop('downsample_scene')
+
+                rospy.loginfo('Adding extrinsics to the 3D points...')
                 self.timer.start('add_extrinsics_information')
                 scene.add_extrinsics_information(
                     p_world_body,
@@ -200,11 +209,18 @@ class TerraSentiaPerception:
                 sequence.remove_old_scenes(max_age=200)
                 self.timer.stop('remove_old_scenes')
 
-                # rospy.loginfo('Writing times...')
-                # self.output_writer.write_times(self.timer)
+                rospy.loginfo('Writing times...')
+                self.output_writer.write_times(self.timer)
 
-            if sequence.scenes:
+            # if sequence.scenes:
             #     rospy.loginfo('Plotting...')
+
+            #     self.plot_3d(
+            #         data,
+            #         sequence,
+            #         v_3d,
+            #         see_sequence=see_sequence
+            #     )
 
             #     self.plot_tracking(
             #         data,
@@ -213,13 +229,6 @@ class TerraSentiaPerception:
             #         plot_predictions=False,
             #         save_fig=False
             #     )
-                
-                self.plot_3d(
-                    data,
-                    sequence,
-                    v_3d,
-                    see_sequence=see_sequence
-                )
 
     def plot_tracking(
         self, 
