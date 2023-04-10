@@ -1,6 +1,7 @@
 """
 """
 
+import io
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -22,16 +23,16 @@ class TimerVisualizer:
 
         self.times_file = times_file
 
-        f = open(self.times_file)
-        self.headers = f.readline()
-        self.headers = self.headers.split(',')
+        with open(self.times_file, 'r') as f:
+            self.headers = f.readline()
+            self.headers = self.headers.split(',')
 
-        self.data = np.loadtxt(
-            self.times_file,
-            delimiter=',',
-            skiprows=1,
-            usecols=range(1, len(self.headers) - 1)
-        )
+            self.data = np.loadtxt(
+                self.times_file,
+                delimiter=',',
+                skiprows=1,
+                usecols=range(0, len(self.headers))
+            )
 
     def plot(
         self
