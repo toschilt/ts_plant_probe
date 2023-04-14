@@ -42,7 +42,7 @@ class TerraSentiaPerception:
         
         rospy.loginfo('Getting data...')
         self.sync_loader = SynchronizedLoader(
-            '/home/daslab/Documents/dev/catkin_ws/src/ts_semantic_feature_detector/data - cornfield1 - 09 01 - start 1000'
+            '/home/daslab/Documents/dev/catkin_ws/src/ts_semantic_feature_detector/data'
         )
 
         rospy.loginfo('Loading segmentation model aspects...')
