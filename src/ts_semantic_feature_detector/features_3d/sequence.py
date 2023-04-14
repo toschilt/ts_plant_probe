@@ -121,9 +121,6 @@ class AgriculturalSequence:
                         # Add cluster to crop
                         crops[nc].cluster = existing_cluster
 
-        print([cluster.id for cluster in self.clusters])
-        print([cluster.age for cluster in self.clusters])
-
     def remove_old_clusters(
         self,
         cluster_max_age: int = 15
