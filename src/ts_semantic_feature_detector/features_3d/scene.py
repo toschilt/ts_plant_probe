@@ -18,6 +18,7 @@ class AgriculturalScene:
     obtained from a RGB and a depth images.
 
     Attributes:
+        index (int): the index of the scene in the sequence.
         crop_group (:obj:`features_3d.crop.CornCropGroup`): object that 
             encapsules the information about all the crops in a single scene.
         ground_plane (:obj:`features_3d.ground_plane.GroundPlane`): the object
@@ -25,21 +26,20 @@ class AgriculturalScene:
         extrinsics (:obj:`np.ndarray`): the extrinsics matrix. It can be 
             applied to all agricultural scene components. If it is not informed,
             the add_extrinsics_information function must be called.
-        age (int): the age of the scene. It is used to remove old scenes from 
-            the sequence.
     """
 
     def __init__(
         self,
+        index: int,
         crop_group: CornCropGroup,
         ground_plane: GroundPlane,
         extrinsics: npt.ArrayLike = None
     ):
+        self.index = index
         self.crop_group = crop_group
         self.ground_plane = ground_plane
         self.extrinsics = extrinsics
-        self.age = 0
-
+        
     def downsample(
         self, 
         crop_voxel_size: float,
@@ -207,7 +207,6 @@ class AgriculturalScene:
         plot_3d_points_crop: bool = False,
         plot_3d_points_plane: bool = False,
         plot_emerging_points: bool = False,
-        cluster_blacklist: List = None
     ):
         """
         Plot the agricultural scene using the Plotly library.
@@ -229,8 +228,6 @@ class AgriculturalScene:
                 pointclouds needs to be plotted.
             plot_emerging_point (bool, optional): indicates if the crop 3D emerging 
                 point needs to be plotted.
-            cluster_blacklist (:obj:`list`, optional): a list containing the
-                clusters that must be ignored.
 
         Returns:
             :obj:`list`: the plotted objects.
@@ -245,7 +242,6 @@ class AgriculturalScene:
             plot_3d_points_crop,
             line_scalars,
             plot_emerging_points,
-            cluster_blacklist
         )
         
         self.ground_plane.plot(
