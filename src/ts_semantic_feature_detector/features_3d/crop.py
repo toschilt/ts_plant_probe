@@ -111,12 +111,11 @@ class CornCrop:
         # Get 3D features.
         self.average_point = np.average(self.ps_3d, axis=0)
         self.crop_vector = self._get_principal_component(self.ps_3d)
-        self.crop_vector_angles = self._get_vector_angles(self.crop_vector)
+        # self.crop_vector_angles = self._get_vector_angles(self.crop_vector)
         self.emerging_point = None
 
         # Tracking data
-        self.average_depth = self.average_point[2]
-        self.estimated_motion_2d = 0
+        # self.estimated_motion_2d = 0
         self.cluster = -1
 
         # Output data
@@ -298,7 +297,6 @@ class CornCrop:
         plot_3d_points: bool = False,
         line_scalars: npt.ArrayLike = None,
         plot_emerging_point: bool = False,
-        cluster_blacklist: List = None
     ) -> List:
         """
         Plot the corn crop using Plotly library.
@@ -314,7 +312,6 @@ class CornCrop:
                 is not plotted.
             plot_emerging_point (bool, optional): indicates if the crop 3D emerging
                 point needs to be plotted.
-            cluster_blacklist (:obj:`list`): the clusters that must be filtered.
 
         Returns:
             data (:obj:`list`): the list of all plotted objects.
@@ -324,60 +321,61 @@ class CornCrop:
         if data_plot is not None:
             data = data_plot
 
-        color = ''
-        if self.cluster not in cluster_blacklist:
-            color = get_color_from_cluster(self.cluster)
-        else:
-            color = '#000000'
+        if self.cluster is not None:
+            color = ''
+            if self.cluster != -1:
+                color = get_color_from_cluster(self.cluster.id)
+            else:
+                color = '#000000'
 
-        if plot_3d_points:
-            data.append(
-                go.Scatter3d(
-                    x=self.ps_3d[:, 0],
-                    y=self.ps_3d[:, 1],
-                    z=self.ps_3d[:, 2],
-                    marker = go.scatter3d.Marker(
-                        size=2, 
-                        color=color
-                    ),
-                    opacity=0.8,
-                    mode='markers'
+            if plot_3d_points:
+                data.append(
+                    go.Scatter3d(
+                        x=self.ps_3d[:, 0],
+                        y=self.ps_3d[:, 1],
+                        z=self.ps_3d[:, 2],
+                        marker = go.scatter3d.Marker(
+                            size=2, 
+                            color=color
+                        ),
+                        opacity=0.8,
+                        mode='markers'
+                    )
                 )
-            )
 
-        if line_scalars is not None:
-            line_scalars = np.tile(line_scalars, (3, 1)).T
-            line = self.average_point + line_scalars*self.crop_vector
+            if line_scalars is not None:
+                line_scalars = np.tile(line_scalars, (3, 1)).T
+                line = self.average_point + line_scalars*self.crop_vector
 
-            data.append(
-                go.Scatter3d(
-                    x=line[:, 0],
-                    y=line[:, 1],
-                    z=line[:, 2],
-                    marker = go.scatter3d.Marker(
-                        size=2, 
-                        color=color
-                    ),
-                    opacity=0.8,
-                    mode='markers'
+                data.append(
+                    go.Scatter3d(
+                        x=line[:, 0],
+                        y=line[:, 1],
+                        z=line[:, 2],
+                        marker = go.scatter3d.Marker(
+                            size=2, 
+                            color=color
+                        ),
+                        opacity=0.8,
+                        mode='markers'
+                    )
                 )
-            )
-        
-        if plot_emerging_point:
-            data.append(
-                go.Scatter3d(
-                    x=[self.emerging_point[0]],
-                    y=[self.emerging_point[1]],
-                    z=[self.emerging_point[2]],
-                    marker = go.scatter3d.Marker(
-                        size=4,
-                        color=color
-                    ),
-                    opacity=0.8,
-                    mode='markers'
+            
+            if plot_emerging_point:
+                data.append(
+                    go.Scatter3d(
+                        x=[self.emerging_point[0]],
+                        y=[self.emerging_point[1]],
+                        z=[self.emerging_point[2]],
+                        marker = go.scatter3d.Marker(
+                            size=4,
+                            color=color
+                        ),
+                        opacity=0.8,
+                        mode='markers'
+                    )
                 )
-            )
-        
+            
         return data
     
 class CornCropGroup:
@@ -472,7 +470,6 @@ class CornCropGroup:
         plot_3d_points: bool = False,
         line_scalars: npt.ArrayLike = None,
         plot_emerging_point: bool = False,
-        cluster_blacklist: List = None
     ) -> List:
         """
         Plot the corn group using the Plotly library.
@@ -488,8 +485,6 @@ class CornCropGroup:
                 is not plotted.
             plot_emerging_point (bool, optional): indicates if the crop
                 3D emerging point needs to be plotted.
-            cluster_blacklist (:obj:`list`, optional): the clusters that 
-                must be ignored.
 
         Returns:
             data (:obj:`list`): the list of all plotted objects.
@@ -504,7 +499,6 @@ class CornCropGroup:
                 plot_3d_points,
                 line_scalars,
                 plot_emerging_point,
-                cluster_blacklist
             )
 
         return data
