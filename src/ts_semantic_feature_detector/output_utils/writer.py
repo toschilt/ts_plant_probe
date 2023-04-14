@@ -8,7 +8,7 @@ from typing import List
 import numpy as np
 import numpy.typing as npt
 
-from ts_semantic_feature_detector.features_3d.scene import AgriculturalScene
+from ts_semantic_feature_detector.features_3d.sequence import AgriculturalSequence
 from ts_semantic_feature_detector.perfomance.timer import Timer
 
 class OutputWriter:
@@ -67,42 +67,52 @@ class OutputWriter:
         with open(self.odom_file, 'a') as f:
             f.write(
                 f'{str(scene_id)}{self.separator}'
+                # Position
                 f'{str(ekf_data[2])}{self.separator}'
                 f'{str(ekf_data[3])}{self.separator}'
                 f'{str(ekf_data[4])}{self.separator}'
+                # Orientation
                 f'{str(ekf_data[5])}{self.separator}'
                 f'{str(ekf_data[6])}{self.separator}'
                 f'{str(ekf_data[7])}{self.separator}'
-                f'{str(ekf_data[8])}\n'
+                f'{str(ekf_data[8])}{self.separator}'
+                # Pose covariance
+                f'{str(ekf_data[9])}{self.separator}'
+                f'{str(ekf_data[10])}{self.separator}'
+                f'{str(ekf_data[11])}{self.separator}'
+                f'{str(ekf_data[12])}{self.separator}'
+                f'{str(ekf_data[13])}{self.separator}'
+                f'{str(ekf_data[14])}\n'
             )
 
     def write_emerging_points(
         self,
-        scene_id: int,
-        scene: AgriculturalScene,
+        sequence: AgriculturalSequence,
+        scenes_idxs: List[int],
     ) -> None:
         """
         Writes the emerging point to the points file.
 
         Args:
-            scene_id (int): the scene id.
-            scene (:obj:`features_3d.scene.AgriculturalScene`): the scene
-                containing the emerging points.
+            sequence (:obj:`features_3d.sequence.AgriculturalSequence`): the
+                sequence object.
+            scenes_idxs (:obj:`list`): the list of scene indexes to be written.
         """
-        for crop in scene.crop_group.crops:
-            cluster = crop.cluster
-
-            if cluster != -1:
-                point = crop.emerging_point_local_frame
-
-                with open(self.points_file, 'a') as f:
-                    f.write(
-                        f'{str(scene_id)}{self.separator}'
-                        f'{str(cluster)}{self.separator}'
-                        f'{str(point[0])}{self.separator}'
-                        f'{str(point[1])}{self.separator}'
-                        f'{str(point[2])}\n'
-                    )
+        for id in scenes_idxs:
+            scene = sequence.scenes[id]
+            for crop in scene.crop_group.crops:
+                # Only crops that are not outliers are written.
+                if crop.cluster != -1:
+                    point = crop.emerging_point_local_frame
+        
+                    with open(self.points_file, 'a') as f:
+                        f.write(
+                            f'{str(scene.index)}{self.separator}'
+                            f'{str(crop.cluster.id)}{self.separator}'
+                            f'{str(point[0])}{self.separator}'
+                            f'{str(point[1])}{self.separator}'
+                            f'{str(point[2])}\n'
+                        )
 
     def write_times(
         self,
@@ -130,3 +140,18 @@ class OutputWriter:
                 total += timer.measurements[key][-1]
             f.write(f'{str(total)}')
             f.write('\n')
+
+    def finish(
+        self,
+        sequence: AgriculturalSequence,
+    ):
+        """
+        Writes all remaining scenes to the emerging points file.
+
+        Args:
+            sequence (:obj:`features_3d.sequence.AgriculturalSequence`): the
+                sequence object.
+        """
+
+        scene_idxs = [i for i in range(len(sequence.scenes))]
+        self.write_emerging_points(sequence, scene_idxs)
