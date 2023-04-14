@@ -35,11 +35,14 @@ class TerraSentiaPerception:
         rospy.init_node('inference')
         self.bridge = CvBridge()
         self.rospack = rospkg.RosPack()
+        self.sequence = AgriculturalSequence()
+        self.v_3d = Visualizer3D()
+
         signal.signal(signal.SIGINT, self.signal_handler)
         
         rospy.loginfo('Getting data...')
         self.sync_loader = SynchronizedLoader(
-            '/home/daslab/Documents/dev/catkin_ws/src/ts_semantic_feature_detector/data'
+            '/home/daslab/Documents/dev/catkin_ws/src/ts_semantic_feature_detector/data - cornfield1 - 09 01 - start 1000'
         )
 
         rospy.loginfo('Loading segmentation model aspects...')
@@ -90,10 +93,7 @@ class TerraSentiaPerception:
         self.main()      
     
     def main(self):
-        sequence = AgriculturalSequence()
-        v_3d = Visualizer3D()
-
-        see_sequence = 10
+        see_sequence = 15
         for data in self.sync_loader.get_sync_data(1000):
             rospy.loginfo(f'Getting agricultural scene [{data["index"]}]...')
 
@@ -163,7 +163,7 @@ class TerraSentiaPerception:
 
                 rospy.loginfo('Getting the agricultural scene...')
                 self.timer.start('scene')
-                scene = AgriculturalScene(crop_group, gp)
+                scene = AgriculturalScene(data['index'], crop_group, gp)
                 self.timer.stop('scene')
 
                 rospy.loginfo('Downsampling point clouds...')
@@ -185,7 +185,7 @@ class TerraSentiaPerception:
                 self.timer.stop('add_extrinsics_information')
 
                 self.timer.start('add_scene')
-                sequence.add_scene(scene)
+                self.sequence.add_scene(scene)
                 self.timer.stop('add_scene')
 
                 # rospy.loginfo('Tracking boxes...')
@@ -193,93 +193,46 @@ class TerraSentiaPerception:
 
                 rospy.loginfo('Clustering crops...')
                 self.timer.start('cluster_crops')
-                sequence.cluster_crops()
+                self.sequence.cluster_crops()
                 self.timer.stop('cluster_crops')
 
-                rospy.loginfo('Writing emerging points...')
+                rospy.loginfo('Filtering old clusters...')
+                self.timer.start('remove_old_clusters')
+                old_cluster_exist = self.sequence.remove_old_clusters(cluster_max_age=5)
+                self.timer.stop('remove_old_clusters')
+
+                rospy.loginfo('Finding old scenes...')
+                self.timer.start('get_old_scenes_idxs')
+                old_scenes_idxs = self.sequence.get_old_scenes_idxs(old_cluster_exist)
+                self.timer.stop('get_old_scenes_idxs')
+
+                rospy.loginfo('Writing emerging points from old scenes...')
                 self.timer.start('write_emerging_points')
                 self.output_writer.write_emerging_points(
-                    data['index'],
-                    scene
+                    self.sequence,
+                    old_scenes_idxs
                 )
                 self.timer.stop('write_emerging_points')
 
-                rospy.loginfo('Filtering old scenes...')
+                rospy.loginfo('Removing old scenes...')
                 self.timer.start('remove_old_scenes')
-                sequence.remove_old_scenes(max_age=200)
+                self.sequence.remove_old_scenes(old_scenes_idxs)
                 self.timer.stop('remove_old_scenes')
 
                 rospy.loginfo('Writing times...')
                 self.output_writer.write_times(self.timer)
 
-            # if sequence.scenes:
+            # if self.sequence.scenes:
             #     rospy.loginfo('Plotting...')
 
             #     self.plot_3d(
             #         data,
-            #         sequence,
-            #         v_3d,
+            #         self.sequence,
+            #         self.v_3d,
             #         see_sequence=see_sequence
             #     )
 
-            #     self.plot_tracking(
-            #         data,
-            #         sequence,
-            #         detections,
-            #         plot_predictions=False,
-            #         save_fig=False
-            #     )
-
-    def plot_tracking(
-        self, 
-        data,
-        sequence,
-        detections,
-        plot_predictions=False,
-        save_fig=False,
-    ):
-        fig, ax = plt.subplots()
-        ax.imshow(data['rgb'])
-        detections.mask_group.plot(0.5)
-
-        # Plot box detections
-        for crop in sequence.scenes[-1].crop_group.crops:
-            track = crop.crop_box.data
-            ax.add_patch(
-                patches.Rectangle(
-                (track[0], track[1]),
-                track[2] - track[0],
-                track[3] - track[1],
-                linewidth=3,
-                edgecolor=get_color_from_cluster(int(crop.cluster)),
-                facecolor='none')
-            )
-
-        # Plot predicted boxes
-        if plot_predictions and len(sequence.scenes) > 1:
-            for crop in sequence.scenes[-2].crop_group.crops:
-                track = crop.crop_box.data
-                offset = crop.estimated_motion_2d
-                ax.add_patch(
-                    patches.Rectangle(
-                    (track[0] + offset[0], track[1] + offset[1]),
-                    track[2] + offset[0] - track[0],
-                    track[3] + offset[1] - track[1],
-                    linewidth=3,
-                    edgecolor='#FF0000',
-                    facecolor='none')
-                )
-        
-        if save_fig:
-            plt.savefig(
-                '/home/daslab/Documents/dev/catkin_ws/src/ts_semantic_feature_detector/log/'
-                + str(data['index'])
-                + '.png'
-            )
-        else:
-            plt.show()
-
-        plt.close()
+        self.output_writer.finish(self.sequence)
 
     def plot_3d(
         self,
@@ -301,14 +254,16 @@ class TerraSentiaPerception:
                 # ),
                 plot_3d_points_crop=False,
                 plot_emerging_points=True,
-                plot_3d_points_plane=False,
-                cluster_threshold=3
+                plot_3d_points_plane=False
             )
                 
             v_3d.show()
 
     def signal_handler(self, sig, frame):
-        print('Exiting...')
+        rospy.loginfo('Please wait to finish writing the output files...')
+        self.output_writer.finish(self.sequence)
+
+        rospy.loginfo('Exiting...')
         sys.exit(0)
 
 if __name__ == '__main__':
