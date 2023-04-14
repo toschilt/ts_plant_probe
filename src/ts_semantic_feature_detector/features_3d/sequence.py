@@ -1,14 +1,14 @@
 """
 Encapsules several agricultural scenes through time.
 """
-
+import gc
 from typing import List, Tuple
 
 import numpy as np
 import numpy.typing as npt
 from sklearn.cluster import DBSCAN
 
-from ts_semantic_feature_detector.features_3d.camera import StereoCamera
+from ts_semantic_feature_detector.features_3d.cluster import Cluster
 from ts_semantic_feature_detector.features_3d.scene import AgriculturalScene
 
 class AgriculturalSequence:
@@ -19,6 +19,8 @@ class AgriculturalSequence:
         scenes (:obj:`list`): a list of :obj:`features_3d.scene.AgriculturalScene` 
             objects containing all the information from each scene in the
             sequence.
+        clusters (:obj:`list`): a list of :obj:`features_3d.cluster.Cluster` objects
+            containing all the information from each cluster in the sequence.
     """
 
     def __init__(
@@ -38,6 +40,8 @@ class AgriculturalSequence:
         if scenes is not None:
             self.scenes = scenes
 
+        self.clusters = []
+
     def add_scene(
         self,
         scene: AgriculturalScene,
@@ -49,9 +53,6 @@ class AgriculturalSequence:
             scene (:obj:`features_3d.scene.AgriculturalScene`): a scene object
                 to be added.
         """
-        for old_scene in self.scenes:
-            old_scene.age += 1
-
         self.scenes.append(scene)
 
     def cluster_crops(
@@ -76,39 +77,134 @@ class AgriculturalSequence:
         """
 
         descriptors = []
+        crops = []
+
         for scene in self.scenes:
             for crop in scene.crop_group.crops:
-                emerging_point = crop.emerging_point
-                # angles = crop.crop_vector_angles
+                # Checks if the crop is part of a old cluster
+                if crop.cluster == -1 or crop.cluster.age != -1:
+                    crops.append(crop)
+                    emerging_point = crop.emerging_point
+                    # angles = crop.crop_vector_angles
 
-                descriptor = emerging_point[:2]
-                descriptors.append(descriptor)
+                    descriptor = emerging_point[:2]
+                    descriptors.append(descriptor)
 
         if descriptors:
             descriptors = np.array(descriptors)
             dbscan = DBSCAN(eps=eps, min_samples=min_samples)
             dbscan.fit(descriptors)
-            clusters = list(dbscan.labels_)
+            dbscan_clusters = list(dbscan.labels_)
 
-            i = 0
-            for scene in self.scenes:
+            for old_cluster in self.clusters:
+                old_cluster.age += 1
+
+            # Check if there are new clusters
+            for nc, dbscan_cluster in enumerate(dbscan_clusters):
+                # Check if the new cluster is a outlier
+                if dbscan_cluster != -1:
+                    if len(self.clusters) < dbscan_cluster + 1:
+                        # Create new clusters as needed
+                        for _ in range(dbscan_cluster + 1 - len(self.clusters)):
+                            self.clusters.append(Cluster(Cluster.next_cluster_id))
+                            Cluster.next_cluster_id += 1
+
+                        # Add cluster to crop
+                        crops[nc].cluster = self.clusters[-1]
+                    else:
+                        existing_cluster = self.clusters[dbscan_cluster]
+
+                        # Only reset age for the clusters with crops found in the last scene
+                        if nc > len(dbscan_clusters) - len(self.scenes[-1].crop_group.crops):
+                            existing_cluster.age = 0
+
+                        # Add cluster to crop
+                        crops[nc].cluster = existing_cluster
+
+        print([cluster.id for cluster in self.clusters])
+        print([cluster.age for cluster in self.clusters])
+
+    def remove_old_clusters(
+        self,
+        cluster_max_age: int = 15
+    ) -> bool:
+        """
+        Removes old clusters from the sequence.
+
+        Args:
+            cluster_max_age (int, optional): the maximum age of a cluster to be removed.
+
+        Returns:
+            bool: True if at least one cluster was removed, False otherwise.
+        """
+        old_clusters = [[i, cluster] for i, cluster in enumerate(self.clusters) if cluster.age > cluster_max_age]
+        
+        if old_clusters:
+            old_clusters = np.array(old_clusters)
+            for c, cluster in zip(old_clusters[:, 0], old_clusters[:, 1]):
+                # Indicating that the cluster is expired
+                cluster.age = -1
+
+                del self.clusters[c]
+                old_clusters[:, 0] -= 1
+
+            return True
+        else:
+            return False
+    
+    def get_old_scenes_idxs(
+        self,
+        old_cluster_exists: bool
+    ):
+        """
+        Gets the scenes that only have crops that are part of old clusters or are outliers.
+
+        Only used when there is at least one old cluster.
+        
+        Args:
+            old_cluster_exists (bool): True if there is at least one old cluster in this scene,
+                False otherwise.
+        """
+
+        # When there is at least one old cluster, remove scenes with outliers or crops
+        # that are part of old clusters.
+        old_scenes_idxs = []
+        if old_cluster_exists:
+            for s, scene in enumerate(self.scenes):
+                remove = True
                 for crop in scene.crop_group.crops:
-                    crop.cluster = clusters[i]
-                    i += 1
+                    if crop.cluster != -1 and crop.cluster.age != -1:
+                        remove = False
+                        break
 
-            return clusters
+                if remove:
+                    old_scenes_idxs.append(s)
+
+        return old_scenes_idxs
     
     def remove_old_scenes(
         self,
-        max_age: int = 200
-    ) -> None:
+        old_scenes_idxs: List[int]
+    ) -> bool:
         """
         Removes old scenes from the sequence.
 
         Args:
-            max_age (int, optional): the maximum age of a scene to be removed.
+            old_scenes_idxs (list of int): the indexes of the scenes that should be removed.
+
+        Returns:
+            bool: True if at least one scene was removed, False otherwise.
         """
-        self.scenes = [scene for scene in self.scenes if scene.age < max_age]
+        old_scenes_idxs = np.array(old_scenes_idxs)
+
+        for s in old_scenes_idxs:
+            # for crop in self.scenes[s].crop_group.crops:
+            #     print(gc.get_referrers(crop))
+
+            del self.scenes[s]
+            old_scenes_idxs -= 1
+
+        return len(old_scenes_idxs) > 0
 
     def plot(
         self,
@@ -118,7 +214,6 @@ class AgriculturalSequence:
         plot_3d_points_crop: bool = False,
         plot_3d_points_plane: bool = False,
         plot_emerging_points: bool = False,
-        cluster_threshold: int = 3
     ) -> List:
         """
         Plot the agricultural sequence using the Plotly library.
@@ -141,8 +236,6 @@ class AgriculturalSequence:
                 plane 3D pointclouds needs to be plotted.
             plot_emerging_point (bool, optional): indicates if the crop
                 3D emerging point needs to be plotted.
-            cluster_threshold (int, optional): indicates how many occurences
-                a cluster must have to be printed.
 
         Returns:
             data_plot (:obj:`list`): a list containing all the plotted objects.
@@ -152,16 +245,6 @@ class AgriculturalSequence:
         if data_plot is not None:
             data = data_plot
 
-        clusters = []
-        for scene in self.scenes:
-            for crop in scene.crop_group.crops:
-                clusters.append(crop.cluster)
-
-        cluster_blacklist = [
-            cluster for cluster in clusters if clusters.count(cluster) < cluster_threshold
-        ]
-        cluster_blacklist.append(-1)
-
         for scene in self.scenes:
             scene.plot(
                 data,
@@ -170,7 +253,6 @@ class AgriculturalSequence:
                 plot_3d_points_crop,
                 plot_3d_points_plane,
                 plot_emerging_points,
-                cluster_blacklist
             )
 
         return data
