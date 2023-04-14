@@ -10,4 +10,4 @@ def get_color_from_cluster(cluster):
 
     Colors are returned in hexadecimal format.
     """
-    return list(mcolors._colors_full_map.values())[cluster + 10]
+    return list(mcolors._colors_full_map.values())[cluster]
