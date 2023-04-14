@@ -119,7 +119,8 @@ class DataExtractor():
         ekf_f.write(
             'secs,nsecs,' +
             'position.x,position.y,position.z,' +
-            'orientation.x,orientation.y,orientation.z,orientation.w' +
+            'orientation.x,orientation.y,orientation.z,orientation.w,' +
+            'cov.x,cov.y,cov.z,cov.rx,cov.ry,cov.rz' +
             '\n'
         )
 
@@ -141,6 +142,8 @@ class DataExtractor():
                 position = [position.x, position.y, position.z]
                 orientation = msg.pose.pose.orientation
                 orientation = [orientation.x, orientation.y, orientation.z, orientation.w]
+
+                covariance = msg.pose.covariance
                 
                 ekf_f.write(str(secs))
                 ekf_f.write(',')
@@ -149,10 +152,14 @@ class DataExtractor():
                 for pos in position:
                     ekf_f.write(str(pos))
                     ekf_f.write(',')
-                for ori in orientation[:-1]:
+                for ori in orientation:
                     ekf_f.write(str(ori))
                     ekf_f.write(',')
-                ekf_f.write(str(orientation[-1]))
+                for c, cov in enumerate(covariance[:-1]):
+                    if c % 7 == 0:
+                        ekf_f.write(str(cov))
+                        ekf_f.write(',')
+                ekf_f.write(str(covariance[-1]))
                 ekf_f.write('\n')
 
             if topic == topics['imu']:
