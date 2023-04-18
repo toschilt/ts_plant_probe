@@ -33,6 +33,16 @@ class Timer:
         self.start_times = {}
         self.end_times = {}
 
+    def new_cicle(
+        self
+    ):
+        """
+        Resets the start and end times
+        """
+        self.measurements.clear()
+        self.start_times.clear()
+        self.end_times.clear()
+
     def start(
         self,
         name: str
