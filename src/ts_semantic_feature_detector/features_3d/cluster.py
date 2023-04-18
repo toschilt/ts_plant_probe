@@ -9,6 +9,7 @@ class Cluster:
     Attributes:
         id (int): the cluster id.
         age (int): the cluster age.
+        num_crops (int): the number of crops associated to this cluster.
     """ 
 
     # The ids of the deleted clusters.
@@ -27,3 +28,4 @@ class Cluster:
         
         self.id = id
         self.age = 0
+        self.num_crops = 0
