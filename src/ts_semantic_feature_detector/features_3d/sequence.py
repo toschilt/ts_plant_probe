@@ -1,7 +1,6 @@
 """
 Encapsules several agricultural scenes through time.
 """
-import gc
 from typing import List, Tuple
 
 import numpy as np
@@ -58,7 +57,8 @@ class AgriculturalSequence:
     def cluster_crops(
         self,
         eps: float = 0.05,
-        min_samples: int = 3
+        min_samples: int = 3,
+        max_crops_per_cluster: int = 15
     ) -> List:
         """
         Fits a unsupervised model to crop data to try to approximate stems.
@@ -71,6 +71,8 @@ class AgriculturalSequence:
             min_samples (int, optional): the number of samples (or total weight) 
                 in a neighborhood for a point to be considered as a core point.
                 This includes the point itself.
+            max_crops_per_cluster (int, optional): the maximum number of crops
+                that a cluster can have.
 
         Returns:
             crop_labels (:obj:`list`): containing the labels of the analysed crops.
@@ -98,6 +100,7 @@ class AgriculturalSequence:
 
             for old_cluster in self.clusters:
                 old_cluster.age += 1
+                old_cluster.num_crops = 0
 
             # Check if there are new clusters
             for nc, dbscan_cluster in enumerate(dbscan_clusters):
@@ -114,11 +117,18 @@ class AgriculturalSequence:
                     else:
                         existing_cluster = self.clusters[dbscan_cluster]
 
+                        # Checks if the cluster is not full. This is done to avoid
+                        # memory issues when the same crop is detected in multiple
+                        # consecutive scenes.
+                        if existing_cluster.num_crops > max_crops_per_cluster:
+                            continue
+
                         # Only reset age for the clusters with crops found in the last scene
                         if nc > len(dbscan_clusters) - len(self.scenes[-1].crop_group.crops):
                             existing_cluster.age = 0
 
                         # Add cluster to crop
+                        existing_cluster.num_crops += 1
                         crops[nc].cluster = existing_cluster
 
     def remove_old_clusters(
@@ -195,9 +205,6 @@ class AgriculturalSequence:
         old_scenes_idxs = np.array(old_scenes_idxs)
 
         for s in old_scenes_idxs:
-            # for crop in self.scenes[s].crop_group.crops:
-            #     print(gc.get_referrers(crop))
-
             del self.scenes[s]
             old_scenes_idxs -= 1
 
