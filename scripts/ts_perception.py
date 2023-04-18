@@ -70,13 +70,13 @@ class TerraSentiaPerception:
         height = 720
         self.camera = StereoCamera([fx, fy, cx, cy], [width, height])
 
-        rospy.loginfo('Loading tracker...')
-        self.tracker = AgricultureSort(\
-            self.camera,
-            max_age=2,
-            min_hits=0,
-            iou_threshold=0.1
-        )
+        # rospy.loginfo('Loading tracker...')
+        # self.tracker = AgricultureSort(\
+        #     self.camera,
+        #     max_age=2,
+        #     min_hits=0,
+        #     iou_threshold=0.1
+        # )
 
         rospy.loginfo('Loading timer...')
         self.timer = Timer()
@@ -94,8 +94,11 @@ class TerraSentiaPerception:
     
     def main(self):
         see_sequence = 15
-        for data in self.sync_loader.get_sync_data(1000):
+
+        for data in self.sync_loader.get_sync_data():
             rospy.loginfo(f'Getting agricultural scene [{data["index"]}]...')
+
+            self.timer.new_cicle()
 
             rospy.loginfo('Getting extrinsics...')
             self.timer.start('get_extrinsics')
@@ -193,12 +196,12 @@ class TerraSentiaPerception:
 
                 rospy.loginfo('Clustering crops...')
                 self.timer.start('cluster_crops')
-                self.sequence.cluster_crops()
+                self.sequence.cluster_crops(max_crops_per_cluster=15)
                 self.timer.stop('cluster_crops')
 
                 rospy.loginfo('Filtering old clusters...')
                 self.timer.start('remove_old_clusters')
-                old_cluster_exist = self.sequence.remove_old_clusters(cluster_max_age=5)
+                old_cluster_exist = self.sequence.remove_old_clusters(cluster_max_age=15)
                 self.timer.stop('remove_old_clusters')
 
                 rospy.loginfo('Finding old scenes...')
@@ -221,6 +224,10 @@ class TerraSentiaPerception:
 
                 rospy.loginfo('Writing times...')
                 self.output_writer.write_times(self.timer)
+
+                print('cluster.id =', [cluster.id for cluster in self.sequence.clusters])
+                print('cluster.age =', [cluster.age for cluster in self.sequence.clusters])
+                print('scenes_num:', len(self.sequence.scenes))
 
             # if self.sequence.scenes:
             #     rospy.loginfo('Plotting...')
