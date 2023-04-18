@@ -138,6 +138,7 @@ class OutputWriter:
             for key in timer.measurements.keys():
                 f.write(f'{str(timer.measurements[key][-1])}{self.separator}')
                 total += timer.measurements[key][-1]
+                del timer.measurements[key][-1]
             f.write(f'{str(total)}')
             f.write('\n')
 
