@@ -399,8 +399,8 @@ class CornCropGroup:
         Initializes a corn crop group.
         
         Args:
-            mask_group (features_2d.detection.DetectionGroup): the object 
-                containing all the crops masks.
+            detection_group (features_2d.detection.DetectionGroup): the object 
+                containing all the detections.
             camera (features_3d.camera.StereoCamera): It contains all the 
                 stereo camera information to obtain the 3D crops.
             depth_img (PIL.Image): the object containing the depth img
