@@ -6,6 +6,7 @@ import os
 import json
 from typing import Union, Tuple, List, Dict, Any
 
+import numpy as np
 import numpy.typing as npt
 from PIL import Image
 import torch
@@ -130,7 +131,7 @@ class MaskRCNNStemSegmentationModel:
         input_min_size: int,
         input_max_size: int,
         model_path: str = None,
-        num_classes: int = 2,
+        num_classes: int = 3,
     ) -> Tuple[MaskRCNN, torch.optim.SGD, torch.optim.lr_scheduler.StepLR]:
         """
         Constructs the model from PyTorch and adapt to stem segmentation task.
@@ -145,7 +146,7 @@ class MaskRCNNStemSegmentationModel:
             model_path: a string containing the path to the trained model. If
                 specified, model weights are loaded.
             num_classes: The number of classes that the model will look for.
-                For this task, num_classes should be 2 (stem and background).
+                For this task, num_classes should be 3 (stem, ground plane and background).
                 This value is used as default.
 
         Returns:
@@ -289,6 +290,7 @@ class MaskRCNNStemSegmentationModel:
         validation_batch_size: int,
         num_epochs: int,
         log_path: str = None,
+        save_model_path: str = None,
         num_workers: int = 4,
     ) -> None:
         """
@@ -303,6 +305,7 @@ class MaskRCNNStemSegmentationModel:
             num_epochs: number of epochs for the training.
             log_path: the path to the folder where the logs will be written. If None,
                 logging is deactivated.
+            save_model_path: the path to save the model. If None, the model is not saved.
             num_workers: the number of sub-processes to use for data loading.
         """
         if self.train_dataset_idxs is None and self.validation_dataset_idxs is None:
@@ -370,11 +373,12 @@ class MaskRCNNStemSegmentationModel:
             }
 
             # Save a checkpoint if the model improves by "checkpoint_mAP" or each "checkpoint_epochs" epochs.
-            if (mAP - self.hyperparams['checkpoint_mAP_threshold']) >= self.last_best_mAP:
-                torch.save(save_data, "models/model_better_mAP_" + str(epoch))
-                self.last_best_mAP = mAP
-            elif (epoch % self.hyperparams['checkpoint_epochs']) == 0:
-                torch.save(save_data, "models/model_safety_checkpoint_" + str(epoch))
+            if save_model_path is not None:
+                if (mAP - self.hyperparams['checkpoint_mAP_threshold']) >= self.last_best_mAP:
+                    torch.save(save_data, save_model_path + '/model_better_mAP_' + str(epoch))
+                    self.last_best_mAP = mAP
+                elif (epoch % self.hyperparams['checkpoint_epochs']) == 0:
+                    torch.save(save_data, save_model_path + '/model_safety_checkpoint_' + str(epoch))
 
             if log_path is not None:
                 self._log_to_file(
@@ -429,8 +433,29 @@ class MaskRCNNStemSegmentationModel:
         img_tensor.to(self.device)
         
         predictions = self.model(img_tensor)
+        labels = predictions[0]['labels'].detach().cpu().numpy()
         boxes = predictions[0]['boxes'].detach().cpu().numpy()
         masks = predictions[0]['masks'].detach().cpu().numpy()
         scores = predictions[0]['scores'].detach().cpu().numpy()
 
-        return img, boxes, masks, scores
+        stem_idxs = np.where(labels == 1)[0]
+        ground_idxs = np.where(labels == 2)[0]
+
+        stem_data = None
+        ground_data = None
+
+        # Only returns the first ground instance (the better one)    
+        if len(ground_idxs) > 0:   
+            ground_idxs = ground_idxs[0]             
+
+        ground_data = {
+            'masks': masks[ground_idxs]
+        }
+
+        stem_data = {
+            'boxes': boxes[stem_idxs],
+            'masks': masks[stem_idxs],
+            'scores': scores[stem_idxs]
+        }
+
+        return img, ground_data, stem_data
