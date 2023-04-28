@@ -14,6 +14,8 @@ import torch
 from torchvision.transforms import PILToTensor
 from typing import Any
 
+import matplotlib.pyplot as plt
+
 class TerraSentiaDataset(torch.utils.data.Dataset):
     """
     TerraSentia dataset custom loader.
@@ -64,9 +66,28 @@ class TerraSentiaDataset(torch.utils.data.Dataset):
         """
         self.png_path = png_path
         self.mask_path = mask_path
+        self.mask_class_path = mask_path + '/SegmentationClass/'
+        self.mask_obj_path = mask_path + '/SegmentationObject/'
         self.transforms = transforms
+
         self.png_imgs = sorted(os.listdir(self.png_path))
-        self.mask_imgs = sorted(os.listdir(self.mask_path))
+        self.mask_class_imgs = sorted(os.listdir(self.mask_class_path))
+        self.mask_obj_imgs = sorted(os.listdir(self.mask_obj_path))
+
+        self.labelmap = np.loadtxt(
+            os.path.join(self.mask_path, 'labelmap.txt'),
+            dtype=str,
+            delimiter=':',
+            skiprows=1
+        )
+
+        labelmap = []
+        for label in self.labelmap[:-1]:
+            rgb = label[1].split(',')
+            grayscale = 299/1000 * int(rgb[0]) + 587/1000 * int(rgb[1]) + 114/1000 * int(rgb[2])
+            labelmap.append([label[0], int(grayscale)])
+        self.labelmap = np.array(labelmap)
+        
         self.num_imgs = len(self.png_imgs)
         self.img_size = Image.open(os.path.join(self.png_path, self.png_imgs[0])).size
 
@@ -105,38 +126,60 @@ class TerraSentiaDataset(torch.utils.data.Dataset):
                     with zeros.
         """
         img_path = os.path.join(self.png_path, self.png_imgs[idx])
-        mask_path = os.path.join(self.mask_path, self.mask_imgs[idx])
+        class_mask_path = os.path.join(self.mask_class_path, self.mask_class_imgs[idx])
+        obj_mask_path = os.path.join(self.mask_obj_path, self.mask_obj_imgs[idx])
 
         rgb_img = Image.open(img_path).convert("RGB")
-        gray_mask = np.asarray(Image.open(mask_path).convert('L'))
+        class_mask = np.asarray(Image.open(class_mask_path).convert('L'))
+        obj_mask = np.asarray(Image.open(obj_mask_path).convert('L'))
 
-        # Different instances are encoded as different colors in mask image
-        obj_ids = np.unique(gray_mask)
-        # Removes the background ID
-        obj_ids = obj_ids[1:]
-
-        # Get the binary mask for each object instance
-        masks = gray_mask == obj_ids[:, None, None]
-        masks = torch.as_tensor(masks, dtype=torch.uint8)
-
-        # Get the bounding box corresponding to each object instance mask
-        num_objs = len(obj_ids)
+        masks = np.zeros((1, rgb_img.size[1], rgb_img.size[0]), dtype=np.uint8)
         boxes = []
-        for i in range(num_objs):
-            pos = np.where(masks[i])
-            xmin = np.min(pos[1])
-            xmax = np.max(pos[1])
-            ymin = np.min(pos[0])
-            ymax = np.max(pos[0])
-            boxes.append([xmin, ymin, xmax, ymax])
+        labels = []
+
+        class_ids = np.unique(class_mask)
+        for c_id in class_ids[1:]:
+            # Get the class ID
+            id = np.where(self.labelmap[:, 1].astype(np.uint8) == c_id)[0][0]
+            # Reserve the first class ID for background
+            id += 1
+
+            # Get the class mask
+            c_mask = class_mask == c_id
+
+            # Mask the object mask with the class mask
+            objs = np.ma.masked_array(obj_mask, ~c_mask)
+
+            # Different instances are encoded as different colors in object mask image
+            obj_ids = np.unique(objs)
+            # Removes the empty ID
+            obj_ids = obj_ids[:-1]
+            # Get the binary mask for each object instance
+            c_mask = objs == obj_ids[:, None, None]
+            masks = np.concatenate((masks, c_mask), axis=0)
+
+            # Get the bounding box corresponding to each object instance mask
+            # Append the id for each object instance
+            num_objs = len(obj_ids)
+            for i in range(num_objs):
+                pos = np.where(c_mask[i])
+                xmin = np.min(pos[1])
+                xmax = np.max(pos[1])
+                ymin = np.min(pos[0])
+                ymax = np.max(pos[0])
+                boxes.append([xmin, ymin, xmax, ymax])
+                labels.append(id)
+
+        #Drop the first mask, which is empty
+        masks = masks[1:, :, :]
+
+        masks = torch.as_tensor(masks, dtype=torch.uint8)
         boxes = torch.as_tensor(boxes, dtype=torch.float32)
-
-        # There is only one class in this task. Fills the array with ones.
-        labels = torch.ones((num_objs,), dtype=torch.int64)
-
+        labels = torch.as_tensor(labels, dtype=torch.int64)
         image_id = torch.tensor([idx])
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:,2] - boxes[:, 0])
-        iscrowd = torch.zeros((num_objs,), dtype=torch.int64)
+        total_objs = len(labels)
+        iscrowd = torch.zeros((total_objs,), dtype=torch.int64)
 
         target = {}
         target["boxes"] = boxes
