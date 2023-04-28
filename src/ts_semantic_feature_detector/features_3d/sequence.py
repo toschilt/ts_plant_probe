@@ -89,7 +89,7 @@ class AgriculturalSequence:
                     emerging_point = crop.emerging_point
                     # angles = crop.crop_vector_angles
 
-                    descriptor = emerging_point[:2]
+                    descriptor = emerging_point
                     descriptors.append(descriptor)
 
         if descriptors:
