@@ -275,3 +275,34 @@ class MetricsVisualizer:
         plt.legend(loc='lower left')
         
         plt.show()
+
+    def plot_relevant_metrics(self):
+        plt.figure()
+
+        plt.subplot(1, 2, 1)
+        loss_metrics = list(self.train_metrics.keys())[2:]
+        for loss_metric in loss_metrics:
+            plt.plot(self.train_metrics['epochs'], self.train_metrics[loss_metric], label=loss_metric)
+        plt.title('Training loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend()
+
+        plt.subplot(1, 2, 2)
+        plt.plot(self.validation_metrics['epochs'], self.validation_metrics['bbox'][:,0], label='AP at IoU=.50:.05:.95')
+        plt.plot(self.validation_metrics['epochs'], self.validation_metrics['bbox'][:,8], label='AR given 100 detections per image')
+        plt.title('Validation metrics')
+        plt.xlabel('Epochs')
+        plt.ylabel('Metric')
+        plt.legend()
+        plt.show()
+
+
+if __name__ == '__main__':
+    metrics = MetricsVisualizer(
+        '/home/daslab/Documents/dev/catkin_ws/src/ts_semantic_feature_detector/log/train_log.json',
+        '/home/daslab/Documents/dev/catkin_ws/src/ts_semantic_feature_detector/log/validation_log.json'
+    )
+    metrics.plot_relevant_metrics()
+    metrics.plot_training_loss_metrics_together()
+    metrics.plot_testing_metrics_comparatively('segm')
