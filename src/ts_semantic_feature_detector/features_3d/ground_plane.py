@@ -39,6 +39,8 @@ class GroundPlane:
         camera: StereoCamera,
         depth_img: Image.Image,
         threshold_values: Dict = None,
+        mask: npt.NDArray[np.uint8] = None,
+        binary_threshold: float = 0.5,
     ):
         """
         Initializes the ground plane abstraction.
@@ -57,6 +59,9 @@ class GroundPlane:
 
                 2. 'ngrdi': uses the NGRDI vegetation index to find the
                 ground.
+
+                3. 'model': uses a pre-trained model to find the ground.
+                The mask parameter must be provided in this case.
             camera (features_3d.camera.StereoCamera): the object contains all 
                 the stereo camera information to obtain the 3D crop.
             depth_img (PIL.Image): the depth img from the whole scene. It will 
@@ -65,6 +70,10 @@ class GroundPlane:
                 the choosen method is 'threshold_gaussian'. If it is not
                 provided, default values are used. For more reference,
                 please refer to source.
+            mask (:obj:`np.ndarray`): the mask to be used if the choosen method
+                is 'model'.
+            binary_threshold (float): the threshold to be used if the choosen
+                method is 'model' to binarize masks.
         """
         self.rgb_img = rgb_img
 
@@ -90,6 +99,8 @@ class GroundPlane:
             self.binary_mask = self.get_ngrdi_mask(
                 np.array(self.rgb_img)
             )
+        elif finding_ground_method == 'model':
+            self.binary_mask = np.uint8(np.moveaxis(mask, 0, 2) > binary_threshold)
             
         self.binary_mask = np.uint8(self.binary_mask != 0)
         self.binary_mask_idxs = np.argwhere(self.binary_mask)
@@ -110,6 +121,10 @@ class GroundPlane:
             self.ps_3d.append(camera.get_3d_point(p_2d, z))
         self.ps_3d = np.array(self.ps_3d)
 
+        self.average_point = None
+        self.ground_vectors = None
+        self.normal_vector = None
+        self.coeficients = None
         if self.ps_3d.shape[0] > 0:
             # Find the point and vectors that describe the ground plane.
             self.average_point = np.average(self.ps_3d, axis=0)
