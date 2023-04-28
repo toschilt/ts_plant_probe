@@ -56,16 +56,16 @@ class Visualizer2D:
             mask_group.plot()
 
             if opt_avg_curve is not None:
-                for mask in mask_group.masks:
+                for mask in mask_group.data:
                     mask.average_curve.plot(options=opt_avg_curve)
 
             if opt_ransac_line is not None:
-                for mask in mask_group.masks:
+                for mask in mask_group.data:
                     mask.ransac_line.plot(options=opt_ransac_line)
         else:
-            num_masks = len(mask_group.masks)
+            num_masks = len(mask_group.data)
             
-            for i, mask in zip(range(num_masks), mask_group.masks):
+            for i, mask in zip(range(num_masks), mask_group.data):
                 plt.subplot(subplot_shape[0], subplot_shape[1], i+1)
                 
                 if rgb_img is not None:
