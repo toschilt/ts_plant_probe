@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>ts_semantic_feature_detector</name>
+  <name>ts_plant_probe</name>
   <version>0.0.0</version>
   <description>Package containing Python modules to describe corn environment.</description>
 
@@ -48,7 +48,6 @@
   <!--   <test_depend>gtest</test_depend> -->
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
-  <depend>zed-ros-wrapper</depend>
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>rospy</build_depend>
   <build_export_depend>rospy</build_export_depend>
