@@ -19,17 +19,43 @@ class RosbagGenerator():
             topics (List[str]): the topics to be read.
 
         Yields:
-            Tuple[str, Any, rospy.Time]: the topic name, the message and the
-                timestamp.
+            Dict[str, Any, rospy.Time]: a dictionary containing the
+                topic, the message and the timestamp.
 
         """
         for topic, msg, t in self.bag.read_messages(topics=topics):
-            yield topic, msg, t
+            payload = {}
+            payload['topic'] = topic
+            payload['msg'] = msg
+            payload['t'] = t
+            yield payload
 
-if __name__ == '__main__':
-    rosbag_generator = RosbagGenerator(
-        '/home/ltoschi/Documents/LabRoM/plant_by_plant_detection/ts_2023_08_04_12h58m41s_two_rows.bag'
-    )
+    def read_buffer(
+        self,
+        topics: List[str],
+        buffer_size: int
+    ) -> Generator:
+        """
+        Reads the rosbag file according to the given topics while
+        buffering the messages.
 
-    for topic, msg, t in rosbag_generator.read(['/tf']):
-        print(topic, msg, t)
+        Args:
+            topics (List[str]): the topics to be read.
+            buffer_size (int): the buffer size.
+
+        Yields:
+            Vector[Dict[str, Any, rospy.Time]]: a vector of dictionaries
+                containing the topic, the message and the timestamp.
+
+        """
+        i = 0
+        buffer = []
+
+        for payload in self.read(topics=topics):
+            buffer.append(payload)
+            i += 1
+
+            if i == buffer_size:
+                yield buffer
+                buffer = []
+                i = 0
