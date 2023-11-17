@@ -1,8 +1,0 @@
-<launch>
-    <param name="/use_sim_time" value="true"/>
-    <arg name="svo_file" default="" />
-
-    <include file="$(find zed_wrapper)/launch/zed2.launch" >
-        <arg name="svo_file" value="$(find ts_semantic_feature_detector)/data/svo/$(arg svo_file)" />
-    </include>
-</launch>

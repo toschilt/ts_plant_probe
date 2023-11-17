@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <arg name="bag_file" default="" />
-
-    <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(find ts_semantic_feature_detector)/data/rosbag/$(arg bag_file)"/>
-</launch>
