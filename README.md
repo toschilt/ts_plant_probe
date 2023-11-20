@@ -31,6 +31,7 @@ unset PYTHONPATH
 After installing pyenv-virtualenv, create a new virtual environment with Python 3.8.10.
 
 ```bash
+pyenv install 3.8.10
 pyenv virtualenv 3.8.10 ts_plant_probe
 ```
 
@@ -80,8 +81,6 @@ catkin_make
 ## Running
 
 To run the project, follow the steps below.
-
-```bash
 
 1. Unset the `PYTHONPATH` environment variable
 ```bash
