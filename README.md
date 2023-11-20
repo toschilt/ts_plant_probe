@@ -104,7 +104,7 @@ export PYTHONPATH=$PYTHONPATH:{PATH_TO_TS_WS}/ts_ws/src/ts_plant_probe
 
 5. Run the `demo_node` node
 
-In other terminal (do not prior configuration):
+In other terminal (do not need prior configuration):
 ```bash
 roscore
 ```
