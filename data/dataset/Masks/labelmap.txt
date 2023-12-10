@@ -1,0 +1,4 @@
+# label:color_rgb:parts:actions
+Stem:255,53,94::
+Ground:51,24,211::
+background:0,0,0::
