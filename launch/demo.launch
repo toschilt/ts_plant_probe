@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+    <rosparam command="load" file="$(find ts_plant_probe)/config/paths.yaml" />
+
+    <node name="demo" pkg="ts_plant_probe" type="demo_node.py" output="screen" />
+</launch>

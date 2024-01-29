@@ -1,0 +1,6 @@
+---
+base_path: "/home/ltoschi/Documents/LabRoM/plant_by_plant_detection/ts_ws/src/ts_plant_probe"
+
+dataset_path: "{base_path}/data/dataset"
+dataset_metrics_path: "{base_path}/data/dataset/metrics.json"
+logging_conf_path: "{base_path}/config/logging.conf"
