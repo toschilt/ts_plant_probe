@@ -47,7 +47,8 @@ class TerraSentiaDataset(torch.utils.data.Dataset):
         transforms: Any = None,
         mean: torch.FloatTensor = None,
         std_dev: torch.FloatTensor = None,
-        metrics_path: str = None
+        metrics_path: str = None,
+        use_gpu: bool = True
     ):
         """
         Initializes the dataset with custom data path and PyTorch transforms.
@@ -63,6 +64,11 @@ class TerraSentiaDataset(torch.utils.data.Dataset):
                 to images when loaded.
             mean: A PyTorch tensor containing the RGB channels mean of all dataset images.
             std_dev: A PyTorch tensor containing the RGB standard deviation of all dataset images.
+            metrics_path: A string containing the path to the file where the RGB mean and
+                standard deviation will be loaded. If the file does not exist, the RGB
+                mean and standard deviation will be calculated and saved to this file.
+            use_gpu: A boolean flag that indicates if the GPU should be used for
+                PyTorch operations. If True, the GPU will be used if available.
         """
         self.logger = logging.getLogger(__name__)
 
@@ -71,6 +77,7 @@ class TerraSentiaDataset(torch.utils.data.Dataset):
         self.mask_class_path = mask_path + '/SegmentationClass/'
         self.mask_obj_path = mask_path + '/SegmentationObject/'
         self.transforms = transforms
+        self.device = torch.device("cuda" if use_gpu and torch.cuda.is_available() else "cpu")
 
         # Defines custom function to avoid hidden files and to sort files lexicographically
         def _get_files_list(path: str) -> List[str]:
@@ -224,6 +231,11 @@ class TerraSentiaDataset(torch.utils.data.Dataset):
         # Apply all the requested transformation to the image and its data
         if self.transforms is not None:
             rgb_img, target = self.transforms(rgb_img, target)
+
+        # Move the image and its data to the device
+        rgb_img = PILToTensor()(rgb_img).to(self.device)
+        for key in target:
+            target[key] = target[key].to(self.device)
 
         return rgb_img, target
 
