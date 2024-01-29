@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image
 import torch
 from torchvision.transforms import PILToTensor
-from typing import Any
+from typing import Any, List
 
 class TerraSentiaDataset(torch.utils.data.Dataset):
     """
@@ -72,12 +72,18 @@ class TerraSentiaDataset(torch.utils.data.Dataset):
         self.mask_obj_path = mask_path + '/SegmentationObject/'
         self.transforms = transforms
 
+        # Defines custom function to avoid hidden files and to sort files lexicographically
+        def _get_files_list(path: str) -> List[str]:
+            return sorted(
+                (f for f in os.listdir(path) if not f.startswith(".")), key=str.lower
+            )
+
         self.logger.info('Loading PNG images from %s', self.png_path)
-        self.png_imgs = sorted(os.listdir(self.png_path))
+        self.png_imgs = _get_files_list(self.png_path)
         self.logger.info('Loading mask class images from %s', self.mask_path)
-        self.mask_class_imgs = sorted(os.listdir(self.mask_class_path))
+        self.mask_class_imgs = _get_files_list(self.mask_class_path)
         self.logger.info('Loading mask object images from %s', self.mask_path)
-        self.mask_obj_imgs = sorted(os.listdir(self.mask_obj_path))
+        self.mask_obj_imgs = _get_files_list(self.mask_obj_path)
 
         self.num_imgs = len(self.png_imgs)
         self.logger.info('Found %d images', self.num_imgs)
